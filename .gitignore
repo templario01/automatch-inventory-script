@@ -1,0 +1,8 @@
+node_modules
+
+#traspiled directories
+dist
+cache
+prisma
+
+.env
