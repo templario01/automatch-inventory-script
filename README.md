@@ -19,6 +19,9 @@ npm run install
 ## Running script (Local)
 
 ```bash
+# generates prisma schema and generate types
+$ npm run pull:database
+
 # traspile .ts to .js and minify files
 $ npm run build
 
