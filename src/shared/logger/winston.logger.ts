@@ -5,7 +5,8 @@ winstomConfig.addColors({
   error: 'red',
   warn: 'yellow',
   info: 'cyan',
-  debug: 'green',
+  debug: 'grey',
+  verbose: 'green',
 });
 
 const { combine, timestamp, label, printf } = format;
@@ -16,6 +17,7 @@ const myFormat = printf(({ level, message, label, timestamp }) => {
 
 export const winstonLogger = (context: string) => {
   return createLogger({
+    level: 'verbose',
     format: combine(
       format.colorize(),
       label({ label: context }),

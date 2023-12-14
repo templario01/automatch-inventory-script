@@ -5,11 +5,11 @@ export enum Environment {
 }
 
 export type EnvConfigType = {
-  environment: Environment | string;
+  environment: Environment;
   neoauto: string;
 };
 
-export const EnvConfig: EnvConfigType = {
-  environment: process.env.NODE_ENV || Environment.DEV,
+export const envConfig: EnvConfigType = {
+  environment: (process.env.NODE_ENV as Environment) || Environment.DEV,
   neoauto: process.env.NEOAUTO_URL,
 };

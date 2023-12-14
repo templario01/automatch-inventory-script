@@ -6,3 +6,4 @@ cache
 prisma
 
 .env
+test.html

@@ -22,7 +22,7 @@ export function getMileage(mileage: string): number {
     const numberString = match[1].replace(/,/g, '');
     return parseInt(numberString, 10);
   } else {
-    return null;
+    return undefined;
   }
 }
 

@@ -1,7 +1,7 @@
 import { Cheerio, CheerioAPI, Element as CheerioElement } from 'cheerio';
 import * as cheerio from 'cheerio';
 import { Browser as PuppeteerBrowser, Page } from 'puppeteer';
-import { EnvConfig } from '../../shared/settings/env-config';
+import { envConfig } from '../../shared/settings/env-config';
 import { vehicle } from '@prisma/client';
 import { USER_AGENT } from '../../shared/puppeteer/puppeteer.constants';
 import { SyncNeoautoVehicle } from './types/neoauto.types';
@@ -9,17 +9,13 @@ import { VehicleRepository } from '../../shared/database/repositories/vehicle.re
 import { WebsiteRepository } from '../../shared/database/repositories/website.repository';
 import {
   OR,
-  HTML_DESCRIPTION_CONCESSIONARIE,
-  HTML_DESCRIPTION_USED,
-  HTML_MILEAGE_CONCESSIONARIE,
-  HTML_MILEAGE_USED,
-  HTML_MILEAGE_USED2,
-  HTML_LOCATION_CONCESSIONARIE,
-  HTML_LOCATION_USED,
   HTML_MOUNT,
   HTML_MOUNT_PRICE,
   HTML_IMAGE_V2,
   HTML_URL_V2,
+  HTML_DESCRIPTION_V2,
+  HTML_MILEAGE_V2,
+  HTML_LOCATION_V2,
 } from './constants/neoauto.constants';
 import {
   getEnumKeyByValue,
@@ -36,7 +32,7 @@ import { NeoautoCondition } from './enums/neoauto.enums';
 import { CreateVehicleDto } from '../../shared/database/dtos/vehicle.dto';
 
 export class NeoAutoInventory {
-  private readonly NEOAUTO_URL: string = EnvConfig.neoauto;
+  private readonly NEOAUTO_URL: string = envConfig.neoauto;
   private readonly logger: Logger = winstonLogger(NeoAutoInventory.name);
   private readonly browser: PuppeteerBrowser;
 
@@ -44,97 +40,43 @@ export class NeoAutoInventory {
     this.browser = browser;
   }
 
-  private extractPrice(
-    page: CheerioAPI,
-    htmlElement: CheerioElement,
-  ): number | undefined {
-    const price: string = page(htmlElement)
-      .find(HTML_MOUNT + OR + HTML_MOUNT_PRICE)
-      .html();
-    if (price === null || price.toLowerCase().includes('consultar')) {
-      return undefined;
-    }
-    const parsedPrice = parsePrice(price);
-
-    return parsedPrice;
-  }
-
-  private extractImageUrl(
-    page: CheerioAPI,
-    htmlElement: CheerioElement,
-  ): string | undefined {
-    const vehicleHtmlImage = page(htmlElement).find(HTML_IMAGE_V2);
-
-    const imageUrl = vehicleHtmlImage.attr('data-src');
-
-    return imageUrl;
-  }
-
-  private extractVehicleUrl(
-    page: CheerioAPI,
-    htmlElement: CheerioElement,
-  ): string | undefined {
-    const vehiclePath = page(htmlElement).find(HTML_URL_V2).attr('href');
-    const vehicleURL = `${this.NEOAUTO_URL}/${vehiclePath}`;
-
-    return vehicleURL;
-  }
-
   async syncAll(Condition: NeoautoCondition): Promise<void> {
     try {
-      const syncedVehiclesIds = [];
+      const syncedVehiclesIds: string[] = [];
       const { condition, currentUrl, currentWebsite } =
         await this.getSyncConfig(Condition);
       const currentPages = await this.getPages(condition);
-
+      this.logger.info(
+        `[${condition} CARS] Number of pages fetched successfully: ${currentPages}`,
+      );
       const page: Page = await this.browser.newPage();
 
       for (let index = 1; index <= currentPages; index++) {
         await page.goto(`${currentUrl}?page=${index}`, { timeout: 0 });
-
         const html: string = await page.content();
         const $: CheerioAPI = cheerio.load(html);
-
         const vehiclesBlock: Cheerio<CheerioElement> = $(
           'div.s-search div.s-container div.s-results article.c-results',
         );
 
         for (const vehicleHtmlBlock of vehiclesBlock) {
           const vehiclePrice = this.extractPrice($, vehicleHtmlBlock);
-
           if (vehiclePrice !== undefined) {
             const imageUrl = this.extractImageUrl($, vehicleHtmlBlock);
-
             const vehicleUrl = this.extractVehicleUrl($, vehicleHtmlBlock);
-
-            const vehicleDescription = $(vehicleHtmlBlock)
-              .find(
-                HTML_DESCRIPTION_CONCESSIONARIE + OR + HTML_DESCRIPTION_USED,
-              )
-              .text();
-            const mileageHtml = $(vehicleHtmlBlock)
-              .find(
-                HTML_MILEAGE_CONCESSIONARIE +
-                  OR +
-                  HTML_MILEAGE_USED +
-                  OR +
-                  HTML_MILEAGE_USED2,
-              )
-              .next()
-              .text();
-            const location = $(vehicleHtmlBlock)
-              .find(HTML_LOCATION_CONCESSIONARIE + OR + HTML_LOCATION_USED)
-              .html();
-
+            const description = this.extractDescription($, vehicleHtmlBlock);
+            const mileage = this.extractMileage($, vehicleHtmlBlock);
+            const location = this.extractLocation($, vehicleHtmlBlock);
             const neoautoVehicle: SyncNeoautoVehicle = {
               location,
               imageUrl,
               vehiclePrice,
               vehicleUrl,
-              vehicleDescription,
+              description,
               websiteId: currentWebsite.id,
-              mileage: getMileage(mileageHtml),
+              mileage,
             };
+
             const carSynced = await this.syncVehicle(neoautoVehicle, Condition);
 
             if (carSynced) {
@@ -159,6 +101,83 @@ export class NeoAutoInventory {
     }
   }
 
+  private extractPrice(
+    page: CheerioAPI,
+    htmlElement: CheerioElement,
+  ): number | undefined {
+    const price = page(htmlElement)
+      .find(HTML_MOUNT + OR + HTML_MOUNT_PRICE)
+      .html();
+    if (price === null || price.toLowerCase().includes('consultar')) {
+      return undefined;
+    }
+    const parsedPrice = parsePrice(price);
+
+    return parsedPrice;
+  }
+
+  private extractImageUrl(
+    page: CheerioAPI,
+    htmlElement: CheerioElement,
+  ): string | undefined {
+    const vehicleHtmlImage = page(htmlElement).find(HTML_IMAGE_V2);
+    const imageUrl = vehicleHtmlImage.attr('data-src');
+
+    return imageUrl;
+  }
+
+  private extractVehicleUrl(
+    page: CheerioAPI,
+    htmlElement: CheerioElement,
+  ): string | undefined {
+    const vehiclePath = page(htmlElement).find(HTML_URL_V2).attr('href');
+    const vehicleUrl = `${this.NEOAUTO_URL}/${vehiclePath}`;
+
+    return vehicleUrl;
+  }
+
+  private extractDescription(
+    page: CheerioAPI,
+    htmlElement: CheerioElement,
+  ): string | undefined {
+    const description = page(htmlElement)
+      .find(HTML_DESCRIPTION_V2)
+      .html()
+      .trim();
+    if (description.length === 0) return;
+
+    return description;
+  }
+
+  private extractMileage(
+    page: CheerioAPI,
+    htmlElement: CheerioElement,
+  ): number | undefined {
+    const [mileageHtmlText] = page(htmlElement)
+      .find(HTML_MILEAGE_V2)
+      .filter((_, element) => {
+        return page(element).text().includes('Kms');
+      });
+    const mileage = page(mileageHtmlText)
+      .clone()
+      .children()
+      .remove()
+      .end()
+      .text();
+    const parsedMileage = getMileage(mileage);
+
+    return parsedMileage;
+  }
+
+  private extractLocation(
+    page: CheerioAPI,
+    htmlElement: CheerioElement,
+  ): string | undefined {
+    const location = page(htmlElement).find(HTML_LOCATION_V2).html();
+
+    return location;
+  }
+
   private async syncVehicle(
     data: SyncNeoautoVehicle,
     condition: NeoautoCondition,
@@ -169,7 +188,7 @@ export class NeoAutoInventory {
         vehicleUrl,
         vehiclePrice,
         websiteId,
-        vehicleDescription,
+        description,
         mileage,
         location,
       } = data;
@@ -179,12 +198,12 @@ export class NeoAutoInventory {
       const vehicleInfo: CreateVehicleDto = {
         vehicle: {
           location,
+          description,
           mileage: condition === NeoautoCondition.USED ? mileage : 0,
           condition:
             condition === NeoautoCondition.NEW ? Condition.NEW : Condition.USED,
           external_id: id,
           front_image: imageUrl,
-          description: vehicleDescription,
           url: `${this.NEOAUTO_URL}/${vehicleUrl}`,
           price: vehiclePrice,
           original_price: vehiclePrice,
