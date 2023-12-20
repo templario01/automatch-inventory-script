@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: automatch-configmap
+  namespace: automatch-cluster
+data:
+  NODE_ENV: "qa"
+  NEOAUTO_URL: "https://neoauto.com"
+  MERCADOLIBRE_URL: "https://listado.mercadolibre.com.pe"
+  AUTOCOSMOS_URL: "https://autocosmos.com.pe"
+
