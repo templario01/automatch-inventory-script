@@ -7,8 +7,9 @@
   },
   "main": "index.js",
   "scripts": {
-    "clean": "rimraf dist cache",
+    "clean": "rimraf dist cache prisma",
     "build": "npm run clean && tsc && gulp minify",
+    "prisma:init": "npx prisma init",
     "pull:database": "npx prisma db pull && npx prisma generate",
     "prisma:seed": "node scripts/seed.js",
     "start": "node --env-file .env dist/index.js"

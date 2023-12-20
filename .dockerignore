@@ -4,3 +4,6 @@
 **/assets/**
 **/.vscode/**
 **/prisma/**
+**/infra/**
+prisma
+infra
