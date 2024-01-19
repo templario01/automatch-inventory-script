@@ -14,11 +14,13 @@ import { winstonLogger } from './shared/logger/winston.logger';
 
   logger.info('Browser ready to start jobs.');
 
-  await Promise.all([neoautoInventory.syncAll(NeoautoCondition.USED)]);
+  await Promise.all([
+    neoautoInventory.syncAll(NeoautoCondition.NEW),
+    neoautoInventory.syncAll(NeoautoCondition.USED),
+  ]);
 
   browser.close().then(() => {
     logger.info('CronJobs finished successfully.');
     process.exit(0);
   });
-
 })();

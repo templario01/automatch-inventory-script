@@ -40,12 +40,12 @@ export class NeoAutoInventory {
     this.browser = browser;
   }
 
-  async syncAll(Condition: NeoautoCondition): Promise<void> {
+  async syncAll(vehicleCondition: NeoautoCondition): Promise<void> {
     try {
       const syncedVehiclesIds: string[] = [];
       const { condition, currentUrl, currentWebsite } =
-        await this.getSyncConfig(Condition);
-      const currentPages = await this.getPages(condition);
+        await this.getSyncConfig(vehicleCondition);
+      const currentPages = await this.getPages(vehicleCondition);
       this.logger.info(
         `[${condition} CARS] Number of pages fetched successfully: ${currentPages}`,
       );
@@ -77,7 +77,10 @@ export class NeoAutoInventory {
               mileage,
             };
 
-            const carSynced = await this.syncVehicle(neoautoVehicle, Condition);
+            const carSynced = await this.syncVehicle(
+              neoautoVehicle,
+              vehicleCondition,
+            );
 
             if (carSynced) {
               syncedVehiclesIds.push(carSynced.external_id);

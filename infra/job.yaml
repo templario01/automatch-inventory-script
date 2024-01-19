@@ -39,3 +39,8 @@ spec:
                 secretKeyRef:
                   name: automatch-secrets
                   key: database
+            - name: BETTERSTACK_LOGTAIL_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: automatch-secrets
+                  key: logtailtoken

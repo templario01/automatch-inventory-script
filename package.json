@@ -7,7 +7,7 @@
   },
   "main": "index.js",
   "scripts": {
-    "clean": "rimraf dist cache prisma",
+    "clean": "rimraf dist cache",
     "build": "npm run clean && tsc && gulp minify",
     "prisma:init": "npx prisma init",
     "pull:database": "npx prisma db pull && npx prisma generate",
@@ -30,6 +30,8 @@
     "typescript": "^5.3.2"
   },
   "dependencies": {
+    "@logtail/node": "^0.4.19",
+    "@logtail/winston": "^0.4.19",
     "@prisma/client": "^5.6.0",
     "cheerio": "^1.0.0-rc.12",
     "gulp": "^4.0.2",
