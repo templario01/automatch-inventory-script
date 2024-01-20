@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: automatch-configmap
-  namespace: automatch-cluster
+  namespace: automatch-jobs
 data:
   NODE_ENV: "staging"
   NEOAUTO_URL: "https://neoauto.com"

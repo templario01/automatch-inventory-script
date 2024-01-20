@@ -14,8 +14,8 @@ spec:
             app: node-cronjob
         spec:
           containers:
-          - name: ms-vmotor-job
-            image: victor0141/ms-vmotor-jobs:1.4
+          - name: ms-automatch-jobs
+            image: 020503494232.dkr.ecr.us-east-1.amazonaws.com/ms-automatch-jobs-image:1.1
             env:
             - name: NODE_ENV
               valueFrom:
