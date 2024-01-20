@@ -10,4 +10,5 @@ export const getLaunchOptions = (
     executablePath: process.env.PUPPETEER_EXECUTABLE_PATH,
   }),
   headless: 'new',
+  protocolTimeout: 300,
 });

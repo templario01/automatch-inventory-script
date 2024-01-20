@@ -2,17 +2,17 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: automatch-jobs
-  namespace: automatch-cluster
+  namespace: automatch-jobs
 spec:
   parallelism: 1
   completions: 1
   activeDeadlineSeconds: 3600
   template:
     spec:
-      restartPolicy: OnFailure
+      restartPolicy: Never
       containers:
-        - name: ms-vmotor-job
-          image: victor0141/ms-vmotor-jobs:1.4
+        - name: ms-vmotor-jobs
+          image: 020503494232.dkr.ecr.us-east-1.amazonaws.com/ms-automatch-jobs-image:1.1
           env:
             - name: NODE_ENV
               valueFrom:
