@@ -1,34 +1,36 @@
-import { Prisma, vehicle } from '@prisma/client';
-import { randomUUID } from 'crypto';
+import { Prisma, Vehicle } from '@prisma/client';
 import { prisma } from '../prisma';
 import {
   CreateVehicleDto,
   UpdateInventoryStatusDto,
 } from '../dtos/vehicle.dto';
 import { VehicleStatusEnum } from '../../enums/vehicle.enum';
+import { winstonLogger } from '../../logger/winston.logger';
+import { Logger } from 'winston';
 
 export class VehicleRepository {
-  static async upsert(data: CreateVehicleDto): Promise<vehicle | null> {
+  private static readonly logger: Logger = winstonLogger(VehicleRepository.name);
+  static async upsert(data: CreateVehicleDto): Promise<Vehicle | null> {
     try {
       const { vehicle, website_id } = data;
       const upsert = await prisma.vehicle.upsert({
         where: {
-          external_id: vehicle?.external_id,
+          externalId: vehicle?.externalId,
         },
         create: {
           ...vehicle,
-          uuid: randomUUID(),
-          website_id,
+          websiteId: website_id,
           status: 'ACTIVE',
         },
         update: {
           ...vehicle,
-          website_id,
+          websiteId: website_id,
           status: 'ACTIVE',
         },
       });
       return upsert;
     } catch (error) {
+      this.logger.error({msg: `fail to upsert vehicle: ${data?.vehicle?.externalId}`, error })
       return null;
     }
   }
@@ -46,7 +48,7 @@ export class VehicleRepository {
             },
           },
           {
-            external_id: {
+            externalId: {
               notIn: syncedVehiclesIds,
             },
           },

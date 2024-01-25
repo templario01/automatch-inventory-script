@@ -1,8 +1,6 @@
 /* eslint-disable no-console */
 /* eslint-disable @typescript-eslint/no-var-requires */
 const { PrismaClient } = require('@prisma/client');
-const { randomUUID } = require('crypto');
-
 const prisma = new PrismaClient();
 
 const websites = [
@@ -28,7 +26,7 @@ async function createWebsites() {
 async function createWebsite({ name, url }) {
   return prisma.website.upsert({
     where: { url },
-    create: { url, uuid: randomUUID(), name },
+    create: { url, name },
     update: { url, name },
   });
 }

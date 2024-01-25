@@ -1,7 +1,7 @@
 {
-  "name": "ms-vmotor-jobs",
+  "name": "script-automatch-inventory",
   "version": "1.0.0",
-  "description": "jobs for sync vehicle info",
+  "description": "Script for sync vehicles info",
   "engines": {
     "node": ">=20"
   },
@@ -10,7 +10,7 @@
     "clean": "rimraf dist cache",
     "build": "npm run clean && tsc && gulp minify",
     "prisma:init": "npx prisma init",
-    "pull:database": "npx prisma db pull && npx prisma generate",
+    "pull:database": "npx prisma db pull --force && npx prisma generate",
     "prisma:seed": "node scripts/seed.js",
     "start": "node --env-file .env dist/index.js"
   },

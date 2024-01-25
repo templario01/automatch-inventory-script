@@ -2,7 +2,7 @@ import { Cheerio, CheerioAPI, Element as CheerioElement } from 'cheerio';
 import * as cheerio from 'cheerio';
 import { Browser as PuppeteerBrowser, Page } from 'puppeteer';
 import { envConfig } from '../../shared/settings/env-config';
-import { vehicle } from '@prisma/client';
+import { Vehicle } from '@prisma/client';
 import { USER_AGENT } from '../../shared/puppeteer/puppeteer.constants';
 import { SyncNeoautoVehicle } from './types/neoauto.types';
 import { VehicleRepository } from '../../shared/database/repositories/vehicle.repository';
@@ -83,7 +83,7 @@ export class NeoAutoInventory {
             );
 
             if (carSynced) {
-              syncedVehiclesIds.push(carSynced.external_id);
+              syncedVehiclesIds.push(carSynced.externalId);
               this.logger.info(
                 `[${condition} CAR] Vehicle synced: ${carSynced?.url}`,
               );
@@ -184,7 +184,7 @@ export class NeoAutoInventory {
   private async syncVehicle(
     data: SyncNeoautoVehicle,
     condition: NeoautoCondition,
-  ): Promise<vehicle> {
+  ): Promise<Vehicle> {
     try {
       const {
         imageUrl,
@@ -205,11 +205,11 @@ export class NeoAutoInventory {
           mileage: condition === NeoautoCondition.USED ? mileage : 0,
           condition:
             condition === NeoautoCondition.NEW ? Condition.NEW : Condition.USED,
-          external_id: id,
-          front_image: imageUrl,
+          externalId: id,
+          frontImage: imageUrl,
           url: `${this.NEOAUTO_URL}/${vehicleUrl}`,
           price: vehiclePrice,
-          original_price: vehiclePrice,
+          originalPrice: vehiclePrice,
           currency: PriceCurrency.USD,
           year: +year,
         },

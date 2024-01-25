@@ -2,17 +2,17 @@ import { PriceCurrency } from '../../enums/currency.enum';
 import { Condition } from '../../enums/vehicle.enum';
 
 class VehicleSyncDto {
-  readonly external_id: string;
+  readonly externalId: string;
   readonly url: string;
   readonly description?: string;
   readonly year?: number;
   readonly transmission?: string;
   readonly mileage?: number;
   readonly speeds?: number;
-  readonly front_image?: string;
+  readonly frontImage?: string;
   readonly images?: string;
   readonly price?: number;
-  readonly original_price?: number;
+  readonly originalPrice?: number;
   readonly currency?: PriceCurrency;
   readonly doors?: number;
   readonly condition?: Condition;
@@ -21,11 +21,11 @@ class VehicleSyncDto {
 
 export class CreateVehicleDto {
   readonly vehicle: VehicleSyncDto;
-  readonly website_id: number;
+  readonly website_id: string;
 }
 
 export class UpdateInventoryStatusDto {
   readonly syncedVehiclesIds: string[];
-  readonly websiteId: number;
+  readonly websiteId: string;
   readonly condition?: Condition;
 }

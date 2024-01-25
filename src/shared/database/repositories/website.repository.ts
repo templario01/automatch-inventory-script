@@ -1,16 +1,16 @@
-import { website } from '@prisma/client';
+import { Website } from '@prisma/client';
 import { prisma } from '../prisma';
 
 export class WebsiteRepository {
-  static async find(): Promise<website[]> {
+  static async find(): Promise<Website[]> {
     return prisma.website.findMany();
   }
 
-  static async findById(id: number): Promise<website> {
+  static async findById(id: string): Promise<Website> {
     return prisma.website.findUnique({ where: { id } });
   }
 
-  static async findByName(name: string): Promise<website> {
+  static async findByName(name: string): Promise<Website> {
     return prisma.website.findUnique({
       where: {
         name,
