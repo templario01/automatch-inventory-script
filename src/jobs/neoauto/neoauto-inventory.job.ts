@@ -33,6 +33,7 @@ import {
   getMileage,
 } from '../../shared/utils/extract-vehicle-data';
 import { InventoryJob } from '../../shared/interfaces/sync-inventory.interface';
+import { getDurationTime } from '../../shared/utils/time';
 
 export class NeoAutoInventory implements InventoryJob {
   private readonly NEOAUTO_URL: string = envConfig.neoauto;
@@ -45,6 +46,7 @@ export class NeoAutoInventory implements InventoryJob {
 
   async syncAll(vehicleCondition: NeoautoCondition): Promise<void> {
     try {
+      const startTime = new Date();
       const syncedVehiclesIds: string[] = [];
       const { condition, currentUrl, currentWebsite } =
         await this.getSyncConfig(vehicleCondition);
@@ -103,8 +105,10 @@ export class NeoAutoInventory implements InventoryJob {
         websiteId: currentWebsite.id,
         condition,
       });
+      const endTime = new Date();
+      const duration = getDurationTime(startTime, endTime);
       this.logger.info(
-        `[${condition} CARS] Job to sync vehicles finished successfully, deleted cars: ${deletedCars.count}`,
+        `[${condition} CARS] Job to sync vehicles finished successfully, deleted cars: ${deletedCars.count}, elapsed time: ${duration}`,
       );
     } catch (error) {
       this.logger.error('fail to sync all inventory', error);

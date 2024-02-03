@@ -22,6 +22,7 @@ import { InventoryJob } from '../../shared/interfaces/sync-inventory.interface';
 import { envConfig } from '../../shared/settings/env-config';
 import { SyncAutocosmosVehicle } from './types/autocosmos.types';
 import { Vehicle } from '@prisma/client';
+import { getDurationTime } from '../../shared/utils/time';
 
 export class AutocosmosInventory implements InventoryJob {
   private readonly logger = winstonLogger(AutocosmosInventory.name);
@@ -33,6 +34,7 @@ export class AutocosmosInventory implements InventoryJob {
 
   async syncAll(vehicleCondition: AutocosmosCondition): Promise<void> {
     try {
+      const startTime = new Date();
       const syncedVehiclesIds = [];
       const { condition, currentUrl, currentWebsite } =
         await this.getSyncConfig(vehicleCondition);
@@ -103,8 +105,10 @@ export class AutocosmosInventory implements InventoryJob {
         websiteId: currentWebsite.id,
         condition,
       });
+      const endTime = new Date();
+      const duration = getDurationTime(startTime, endTime);
       this.logger.info(
-        `[${condition} CARS] Job to sync vehicles finished successfully, deleted cars: ${deletedCars.count}`,
+        `[${condition} CARS] Job to sync vehicles finished successfully, deleted cars: ${deletedCars.count}, elapsed time: ${duration}`,
       );
     } catch (error) {
       this.logger.error('fail to sync all inventory', error);
