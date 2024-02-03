@@ -5,6 +5,7 @@ class VehicleSyncDto {
   readonly externalId: string;
   readonly url: string;
   readonly description?: string;
+  readonly name?: string;
   readonly year?: number;
   readonly transmission?: string;
   readonly mileage?: number;

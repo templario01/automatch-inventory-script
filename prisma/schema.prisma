@@ -1,0 +1,72 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model Website {
+  id        String    @id @default(auto()) @map("_id") @db.ObjectId
+  name      String    @unique
+  url       String    @unique
+  status    Status    @default(ACTIVE)
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @default(now()) @updatedAt @map("updated_at")
+  vehicle   Vehicle[]
+
+  @@map("website")
+}
+
+model Vehicle {
+  id            String     @id @default(auto()) @map("_id") @db.ObjectId
+  externalId    String?    @unique @map("external_id")
+  url           String
+  name          String?
+  description   String?
+  year          Int?
+  transmission  String?
+  mileage       Float?     @default(0) @db.Double
+  frontImage    String?    @map("front_image")
+  images        String?
+  location      String?
+  condition     Condition?
+  originalPrice Float?     @default(0) @map("original_price") @db.Double
+  price         Float?     @default(0) @db.Double
+  currency      Currency?
+  createdAt     DateTime   @default(now()) @map("created_at")
+  updatedAt     DateTime   @default(now()) @updatedAt @map("updated_at")
+  website       Website?   @relation(fields: [websiteId], references: [id])
+  websiteId     String     @map("website_id") @db.ObjectId
+  status        Status     @default(ACTIVE)
+
+  @@map("vehicle")
+}
+
+model ProxyConfig {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  expiresAt DateTime @map("expires_at")
+  host      String
+  port      Int
+
+  @@map("proxy_config")
+}
+
+enum Status {
+  ACTIVE
+  INACTIVE
+}
+
+enum Condition {
+  NEW
+  USED
+}
+
+enum Currency {
+  PEN
+  USD
+}

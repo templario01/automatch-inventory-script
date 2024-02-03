@@ -1,5 +1,5 @@
 {
-  "name": "script-automatch-inventory",
+  "name": "automatch-inventory-script",
   "version": "1.0.0",
   "description": "Script for sync vehicles info",
   "engines": {

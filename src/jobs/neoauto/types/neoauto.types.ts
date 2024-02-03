@@ -16,6 +16,7 @@ export interface SyncNeoautoVehicle {
   readonly description?: string;
   readonly mileage?: number;
   readonly location?: string;
+  readonly vehicleName?: string;
 }
 
 export type VehicleBrandAndModel = {

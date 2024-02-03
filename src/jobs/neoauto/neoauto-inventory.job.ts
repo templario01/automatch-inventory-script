@@ -18,8 +18,6 @@ import {
   HTML_LOCATION_V2,
 } from './constants/neoauto.constants';
 import {
-  getEnumKeyByValue,
-  getMileage,
   getModelAndYearFromUrl,
   getVehicleInfoByNeoauto,
   parsePrice,
@@ -30,8 +28,13 @@ import { PriceCurrency } from '../../shared/enums/currency.enum';
 import { Condition } from '../../shared/enums/vehicle.enum';
 import { NeoautoCondition } from './enums/neoauto.enums';
 import { CreateVehicleDto } from '../../shared/database/dtos/vehicle.dto';
+import {
+  getEnumKeyByValue,
+  getMileage,
+} from '../../shared/utils/extract-vehicle-data';
+import { InventoryJob } from '../../shared/interfaces/sync-inventory.interface';
 
-export class NeoAutoInventory {
+export class NeoAutoInventory implements InventoryJob {
   private readonly NEOAUTO_URL: string = envConfig.neoauto;
   private readonly logger: Logger = winstonLogger(NeoAutoInventory.name);
   private readonly browser: PuppeteerBrowser;
@@ -45,14 +48,14 @@ export class NeoAutoInventory {
       const syncedVehiclesIds: string[] = [];
       const { condition, currentUrl, currentWebsite } =
         await this.getSyncConfig(vehicleCondition);
-      const currentPages = await this.getPages(vehicleCondition);
+      const totalPages = await this.getPages(vehicleCondition);
       this.logger.info(
-        `[${condition} CARS] Number of pages fetched successfully: ${currentPages}`,
+        `[${condition} CARS] Number of pages fetched successfully: ${totalPages}`,
       );
       const page: Page = await this.browser.newPage();
 
-      for (let index = 1; index <= currentPages; index++) {
-        await page.goto(`${currentUrl}?page=${index}`, { timeout: 0 });
+      for (let currentPage = 1; currentPage <= totalPages; currentPage++) {
+        await page.goto(`${currentUrl}?page=${currentPage}`, { timeout: 0 });
         const html: string = await page.content();
         const $: CheerioAPI = cheerio.load(html);
         const vehiclesBlock: Cheerio<CheerioElement> = $(
@@ -67,7 +70,9 @@ export class NeoAutoInventory {
             const description = this.extractDescription($, vehicleHtmlBlock);
             const mileage = this.extractMileage($, vehicleHtmlBlock);
             const location = this.extractLocation($, vehicleHtmlBlock);
+            const vehicleName = this.extractName(vehicleUrl);
             const neoautoVehicle: SyncNeoautoVehicle = {
+              vehicleName,
               location,
               imageUrl,
               vehiclePrice,
@@ -104,6 +109,53 @@ export class NeoAutoInventory {
     }
   }
 
+
+  private async syncVehicle(
+    data: SyncNeoautoVehicle,
+    condition: NeoautoCondition,
+  ): Promise<Vehicle> {
+    try {
+      const {
+        vehicleName,
+        imageUrl,
+        vehicleUrl,
+        vehiclePrice,
+        websiteId,
+        description,
+        mileage,
+        location,
+      } = data;
+      const { modelWithYear, id } = getVehicleInfoByNeoauto(vehicleUrl);
+      const { year } = getModelAndYearFromUrl(modelWithYear);
+
+      const vehicleInfo: CreateVehicleDto = {
+        vehicle: {
+          location,
+          description,
+          mileage: condition === NeoautoCondition.USED ? mileage : 0,
+          condition:
+            condition === NeoautoCondition.NEW ? Condition.NEW : Condition.USED,
+          externalId: id,
+          frontImage: imageUrl,
+          url: vehicleUrl,
+          price: vehiclePrice,
+          originalPrice: vehiclePrice,
+          currency: PriceCurrency.USD,
+          name: vehicleName,
+          year: +year,
+        },
+        website_id: websiteId,
+      };
+
+      return VehicleRepository.upsert(vehicleInfo);
+    } catch (error) {
+      this.logger.error(
+        `fail to sync vehicle, ${data?.vehicleUrl || ''}`,
+        error,
+      );
+    }
+  }
+  
   private extractPrice(
     page: CheerioAPI,
     htmlElement: CheerioElement,
@@ -137,6 +189,15 @@ export class NeoAutoInventory {
     const vehicleUrl = `${this.NEOAUTO_URL}/${vehiclePath}`;
 
     return vehicleUrl;
+  }
+
+  private extractName(url: string): string {
+    const urlBrokenInParts = url.split('/');
+    const vehicleWithId = urlBrokenInParts[urlBrokenInParts.length - 1];
+    const vehicleWithoutId = vehicleWithId.replace(/-(\d+)$/, '');
+    const vehicleName = vehicleWithoutId.replace(/-/g, ' ');
+
+    return vehicleName;
   }
 
   private extractDescription(
@@ -179,50 +240,6 @@ export class NeoAutoInventory {
     const location = page(htmlElement).find(HTML_LOCATION_V2).html();
 
     return location;
-  }
-
-  private async syncVehicle(
-    data: SyncNeoautoVehicle,
-    condition: NeoautoCondition,
-  ): Promise<Vehicle> {
-    try {
-      const {
-        imageUrl,
-        vehicleUrl,
-        vehiclePrice,
-        websiteId,
-        description,
-        mileage,
-        location,
-      } = data;
-      const { modelWithYear, id } = getVehicleInfoByNeoauto(vehicleUrl);
-      const { year } = getModelAndYearFromUrl(modelWithYear);
-
-      const vehicleInfo: CreateVehicleDto = {
-        vehicle: {
-          location,
-          description,
-          mileage: condition === NeoautoCondition.USED ? mileage : 0,
-          condition:
-            condition === NeoautoCondition.NEW ? Condition.NEW : Condition.USED,
-          externalId: id,
-          frontImage: imageUrl,
-          url: `${this.NEOAUTO_URL}/${vehicleUrl}`,
-          price: vehiclePrice,
-          originalPrice: vehiclePrice,
-          currency: PriceCurrency.USD,
-          year: +year,
-        },
-        website_id: websiteId,
-      };
-
-      return VehicleRepository.upsert(vehicleInfo);
-    } catch (error) {
-      this.logger.error(
-        `fail to sync vehicle, ${data?.vehicleUrl || ''}`,
-        error,
-      );
-    }
   }
 
   private async getPages(condition: string): Promise<number> {
