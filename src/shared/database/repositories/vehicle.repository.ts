@@ -9,7 +9,9 @@ import { winstonLogger } from '../../logger/winston.logger';
 import { Logger } from 'winston';
 
 export class VehicleRepository {
-  private static readonly logger: Logger = winstonLogger(VehicleRepository.name);
+  private static readonly logger: Logger = winstonLogger(
+    VehicleRepository.name,
+  );
   static async upsert(data: CreateVehicleDto): Promise<Vehicle | null> {
     try {
       const { vehicle, website_id } = data;
@@ -30,7 +32,10 @@ export class VehicleRepository {
       });
       return upsert;
     } catch (error) {
-      this.logger.error({msg: `fail to upsert vehicle: ${data?.vehicle?.externalId}`, error })
+      this.logger.error({
+        msg: `fail to upsert vehicle: ${data?.vehicle?.externalId}`,
+        error,
+      });
       return null;
     }
   }

@@ -1,6 +1,5 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { NeoAutoInventory } from './jobs/neoauto/neoauto-inventory.job';
-import * as puppeteer from 'puppeteer';
+import puppeteer from 'puppeteer-extra';
 import { Browser as PuppeteerBrowser } from 'puppeteer';
 import { getLaunchOptions } from './shared/puppeteer/puppeteer-options';
 import { envConfig } from './shared/settings/env-config';
@@ -8,8 +7,10 @@ import { NeoautoCondition } from './jobs/neoauto/enums/neoauto.enums';
 import { winstonLogger } from './shared/logger/winston.logger';
 import { AutocosmosInventory } from './jobs/autocosmos/autocosmos-inventory.job';
 import { AutocosmosCondition } from './jobs/autocosmos/enums/autocosmos.enum';
+import StealthPlugin from 'puppeteer-extra-plugin-stealth';
 
 (async () => {
+  puppeteer.use(StealthPlugin());
   const logger = winstonLogger('index.js');
   const options = getLaunchOptions(envConfig.environment, []);
   const browser: PuppeteerBrowser = await puppeteer.launch(options);
@@ -17,7 +18,6 @@ import { AutocosmosCondition } from './jobs/autocosmos/enums/autocosmos.enum';
   const autocosmosInventory = new AutocosmosInventory(browser);
 
   logger.info('Browser ready to start jobs.');
-
   await Promise.all([
     neoautoInventory.syncAll(NeoautoCondition.NEW),
     neoautoInventory.syncAll(NeoautoCondition.USED),

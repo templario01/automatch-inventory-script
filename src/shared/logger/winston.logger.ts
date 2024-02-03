@@ -6,15 +6,13 @@ import { Environment, envConfig } from '../settings/env-config';
 
 export type LogTransport = winstomConfig.transport;
 
-export const getLogTransports = (): LogTransport[] => {
-  const logTransports: LogTransport[] = [new transports.Console()];
+export const getLogTransports = (): LogTransport => {
   const { environment, logtailToken } = envConfig;
   if (environment === Environment.PROD || environment === Environment.STG) {
     const logtail = new Logtail(logtailToken);
-    logTransports.push(new LogtailTransport(logtail));
+    return new LogtailTransport(logtail);
   }
-
-  return logTransports;
+  return new transports.Console();
 };
 
 export const winstonLogger = (context: string) => {
@@ -26,19 +24,19 @@ export const winstonLogger = (context: string) => {
     verbose: 'green',
   });
 
-  const { combine, timestamp, label, printf } = format;
+  const { combine, timestamp, label, printf, errors } = format;
   const myFormat = printf(({ level, message, label, timestamp }) => {
     return `${timestamp} [${label}] ${level}: ${message}`;
   });
 
   return createLogger({
-    level: 'verbose',
     format: combine(
+      errors({ stack: true }),
       format.colorize(),
       label({ label: context }),
       timestamp(),
       myFormat,
     ),
-    transports: [...getLogTransports()],
+    transports: [getLogTransports()],
   });
 };

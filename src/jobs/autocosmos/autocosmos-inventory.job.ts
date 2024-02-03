@@ -36,12 +36,12 @@ export class AutocosmosInventory implements InventoryJob {
       const syncedVehiclesIds = [];
       const { condition, currentUrl, currentWebsite } =
         await this.getSyncConfig(vehicleCondition);
-      const currentPages = await this.getPages(this.browser, vehicleCondition);
+      const totalPages = await this.getPages(this.browser, vehicleCondition);
 
       const page: Page = await this.browser.newPage();
 
-      for (let index = 1; index < currentPages; index++) {
-        await page.goto(`${currentUrl}?pidx=${index}`, { timeout: 0 });
+      for (let currentPage = 1; currentPage < totalPages; currentPage++) {
+        await page.goto(`${currentUrl}?pidx=${currentPage}`, { timeout: 0 });
 
         const html: string = await page.content();
         const $: CheerioAPI = cheerio.load(html);
@@ -87,14 +87,16 @@ export class AutocosmosInventory implements InventoryJob {
 
             if (carSynced) {
               syncedVehiclesIds.push(carSynced.externalId);
-              this.logger.verbose(
-                `[${condition} CAR] Vehicle synced: ${carSynced?.url}`,
-              );
             }
           } catch (error) {
             this.logger.error('fail to sync vehicle', error);
           }
         }
+        const carsSynced = currentPage * vehiclesBlocks.length;
+        const percent = Number(((currentPage / totalPages) * 100).toFixed(2));
+        this.logger.info(
+          `[${condition} CARS] total vehicles synchronized = ${carsSynced} (${percent}%)`,
+        );
       }
       const deletedCars = await VehicleRepository.updateStatusForAllInventory({
         syncedVehiclesIds,
@@ -111,8 +113,14 @@ export class AutocosmosInventory implements InventoryJob {
 
   private extractName(url: string) {
     const urlBrokenInParts = url.split('/');
-    const brand = urlBrokenInParts[urlBrokenInParts.length - 4].replace('-', ' ');
-    const model = urlBrokenInParts[urlBrokenInParts.length - 3].replace('-', ' ');
+    const brand = urlBrokenInParts[urlBrokenInParts.length - 4].replace(
+      '-',
+      ' ',
+    );
+    const model = urlBrokenInParts[urlBrokenInParts.length - 3].replace(
+      '-',
+      ' ',
+    );
 
     return `${brand} ${model}`;
   }

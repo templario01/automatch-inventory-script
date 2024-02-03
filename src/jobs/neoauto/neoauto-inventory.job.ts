@@ -89,12 +89,14 @@ export class NeoAutoInventory implements InventoryJob {
 
             if (carSynced) {
               syncedVehiclesIds.push(carSynced.externalId);
-              this.logger.info(
-                `[${condition} CAR] Vehicle synced: ${carSynced?.url}`,
-              );
             }
           }
         }
+        const carsSynced = currentPage * vehiclesBlock.length;
+        const percent = Number(((currentPage / totalPages) * 100).toFixed(2));
+        this.logger.info(
+          `[${condition} CARS] total vehicles synced = ${carsSynced} (${percent}%)`,
+        );
       }
       const deletedCars = await VehicleRepository.updateStatusForAllInventory({
         syncedVehiclesIds,
@@ -108,7 +110,6 @@ export class NeoAutoInventory implements InventoryJob {
       this.logger.error('fail to sync all inventory', error);
     }
   }
-
 
   private async syncVehicle(
     data: SyncNeoautoVehicle,
@@ -155,7 +156,7 @@ export class NeoAutoInventory implements InventoryJob {
       );
     }
   }
-  
+
   private extractPrice(
     page: CheerioAPI,
     htmlElement: CheerioElement,
