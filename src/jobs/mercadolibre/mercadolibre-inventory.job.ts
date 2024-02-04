@@ -1,5 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-import { Cheerio, CheerioAPI, Element as CheerioElement } from 'cheerio';
+import { CheerioAPI } from 'cheerio';
 import * as cheerio from 'cheerio';
 import { Browser as PuppeteerBrowser, Page } from 'puppeteer';
 import { Logger } from 'winston';
@@ -85,7 +84,7 @@ export class MercadolibreInventory implements InventoryJob {
           }
           if (syncedVehicle) {
             syncedVehiclesIds.push(syncedVehicle.externalId);
-            this.logger.verbose(
+            this.logger.info(
               `[USED CAR] Vehicle synced: ${syncedVehicle?.url}`,
             );
           }
