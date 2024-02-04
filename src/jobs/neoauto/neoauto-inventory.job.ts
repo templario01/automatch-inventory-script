@@ -60,37 +60,13 @@ export class NeoAutoInventory implements InventoryJob {
         const vehiclesBlock: Cheerio<CheerioElement> = $(
           'div.s-search div.s-container div.s-results article.c-results',
         );
-
-        for (const vehicleHtmlBlock of vehiclesBlock) {
-          const vehiclePrice = this.extractPrice($, vehicleHtmlBlock);
-          if (vehiclePrice !== undefined) {
-            const imageUrl = this.extractImageUrl($, vehicleHtmlBlock);
-            const vehicleUrl = this.extractVehicleUrl($, vehicleHtmlBlock);
-            const description = this.extractDescription($, vehicleHtmlBlock);
-            const mileage = this.extractMileage($, vehicleHtmlBlock);
-            const location = this.extractLocation($, vehicleHtmlBlock);
-            const vehicleName = this.extractName(vehicleUrl);
-            const neoautoVehicle: SyncNeoautoVehicle = {
-              vehicleName,
-              location,
-              imageUrl,
-              vehiclePrice,
-              vehicleUrl,
-              description,
-              websiteId: currentWebsite.id,
-              mileage,
-            };
-
-            const carSynced = await this.syncVehicle(
-              neoautoVehicle,
-              vehicleCondition,
-            );
-
-            if (carSynced) {
-              syncedVehiclesIds.push(carSynced.externalId);
-            }
-          }
-        }
+        await this.syncVehiclesOfHtmlBlock(
+          $,
+          vehiclesBlock,
+          currentWebsite.id,
+          vehicleCondition,
+          syncedVehiclesIds,
+        );
         const carsSynced = currentPage * vehiclesBlock.length;
         const percent = Number(((currentPage / totalPages) * 100).toFixed(2));
         this.logger.info(
@@ -108,11 +84,50 @@ export class NeoAutoInventory implements InventoryJob {
         `[${condition} CARS] Job to sync vehicles finished successfully, deleted cars: ${deletedCars.count}, elapsed time: ${duration}`,
       );
     } catch (error) {
-      this.logger.error('fail to sync all inventory', error);
+      this.logger.error({ msg: 'fail to sync all inventory', error });
     }
   }
 
-  private async syncVehicle(
+  async syncVehiclesOfHtmlBlock(
+    $: CheerioAPI,
+    vehiclesBlock: Cheerio<CheerioElement>,
+    websiteId: string,
+    vehicleCondition: NeoautoCondition,
+    syncedVehiclesIds: string[],
+  ): Promise<void> {
+    for (const vehicleHtmlBlock of vehiclesBlock) {
+      const vehiclePrice = this.extractPrice($, vehicleHtmlBlock);
+      if (vehiclePrice !== undefined) {
+        const imageUrl = this.extractImageUrl($, vehicleHtmlBlock);
+        const vehicleUrl = this.extractVehicleUrl($, vehicleHtmlBlock);
+        const description = this.extractDescription($, vehicleHtmlBlock);
+        const mileage = this.extractMileage($, vehicleHtmlBlock);
+        const location = this.extractLocation($, vehicleHtmlBlock);
+        const vehicleName = this.extractName(vehicleUrl);
+        const neoautoVehicle: SyncNeoautoVehicle = {
+          vehicleName,
+          location,
+          imageUrl,
+          vehiclePrice,
+          vehicleUrl,
+          description,
+          websiteId,
+          mileage,
+        };
+
+        const carSynced = await this.updateVehicle(
+          neoautoVehicle,
+          vehicleCondition,
+        );
+
+        if (carSynced) {
+          syncedVehiclesIds.push(carSynced.externalId);
+        }
+      }
+    }
+  }
+
+  private async updateVehicle(
     data: SyncNeoautoVehicle,
     condition: NeoautoCondition,
   ): Promise<Vehicle> {
@@ -151,10 +166,10 @@ export class NeoAutoInventory implements InventoryJob {
 
       return VehicleRepository.upsert(vehicleInfo);
     } catch (error) {
-      this.logger.error(
-        `fail to sync vehicle, ${data?.vehicleUrl || ''}`,
+      this.logger.error({
+        msg: `fail to sync vehicle, ${data?.vehicleUrl || ''}`,
         error,
-      );
+      });
     }
   }
 
@@ -246,7 +261,6 @@ export class NeoAutoInventory implements InventoryJob {
 
   private async getPages(condition: string): Promise<number> {
     const puppeteerPage: Page = await this.browser.newPage();
-
     await puppeteerPage.setExtraHTTPHeaders({
       'User-Agent': USER_AGENT,
       Referer: this.NEOAUTO_URL,
@@ -255,7 +269,6 @@ export class NeoAutoInventory implements InventoryJob {
       `${this.NEOAUTO_URL}/venta-de-autos-${condition}?page=1`,
       { timeout: 0 },
     );
-
     const html: string = await puppeteerPage.content();
     const $: CheerioAPI = cheerio.load(html);
 
@@ -264,7 +277,9 @@ export class NeoAutoInventory implements InventoryJob {
       .find('a');
     const paginationUrl = lastPaginationBtn.attr('href');
     const [, maxPages] = paginationUrl.split('page=');
-
+    if (!maxPages) {
+      throw new Error(`fail to get total pages for ${this.NEOAUTO_URL}`);
+    }
     return +maxPages;
   }
 
@@ -276,7 +291,6 @@ export class NeoAutoInventory implements InventoryJob {
     const hostname = new URL(this.NEOAUTO_URL).hostname;
     const [name] = hostname.split('.');
     const currentWebsite = await WebsiteRepository.findByName(name);
-
     const currentUrl = `${this.NEOAUTO_URL}/venta-de-autos-${Condition}`;
 
     return {
