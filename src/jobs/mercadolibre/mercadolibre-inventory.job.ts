@@ -142,7 +142,8 @@ export class MercadolibreInventory implements InventoryJob {
           'div.ui-search-result__content-wrapper div.ui-search-item__group--title',
         )
         .find('a')
-        .attr('title');
+        .attr('title')
+        .replace('-', ' ');
 
       const createVehicle: CreateVehicleDto = {
         vehicle: {
