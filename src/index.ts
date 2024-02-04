@@ -17,8 +17,8 @@ import { MercadolibreInventory } from './jobs/mercadolibre/mercadolibre-inventor
   const options = getLaunchOptions(envConfig.environment, []);
   const browser: PuppeteerBrowser = await puppeteer.launch(options);
   const exchangeRateService = new CurrencyConverterApiService();
-  /*   const neoautoInventory = new NeoAutoInventory(browser);
-  const autocosmosInventory = new AutocosmosInventory(browser); */
+  const neoautoInventory = new NeoAutoInventory(browser);
+  const autocosmosInventory = new AutocosmosInventory(browser);
   const mercadolibreInventory = new MercadolibreInventory(
     browser,
     exchangeRateService,
@@ -26,10 +26,10 @@ import { MercadolibreInventory } from './jobs/mercadolibre/mercadolibre-inventor
 
   logger.info('Browser ready to start jobs.');
   await Promise.all([
-    /*     neoautoInventory.syncAll(NeoautoCondition.NEW),
+    neoautoInventory.syncAll(NeoautoCondition.NEW),
     neoautoInventory.syncAll(NeoautoCondition.USED),
     autocosmosInventory.syncAll(AutocosmosCondition.NEW),
-    autocosmosInventory.syncAll(AutocosmosCondition.USED), */
+    autocosmosInventory.syncAll(AutocosmosCondition.USED),
     mercadolibreInventory.syncAll(),
   ]);
 
