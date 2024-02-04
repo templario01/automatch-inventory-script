@@ -4,13 +4,10 @@ import * as cheerio from 'cheerio';
 import { Browser as PuppeteerBrowser, Page } from 'puppeteer';
 import { AutocosmosCondition } from './enums/autocosmos.enum';
 import { PriceCurrency } from '../../shared/enums/currency.enum';
-import {
-  formatLocation,
-  getExternalId,
-  getPages,
-} from './utils/autocosmos.utils';
+import { getExternalId, getPages } from './utils/autocosmos.utils';
 import { CreateVehicleDto } from '../../shared/database/dtos/vehicle.dto';
 import {
+  formatLocation,
   getEnumKeyByValue,
   getMileage,
 } from '../../shared/utils/extract-vehicle-data';
@@ -26,11 +23,9 @@ import { getDurationTime } from '../../shared/utils/time';
 
 export class AutocosmosInventory implements InventoryJob {
   private readonly logger = winstonLogger(AutocosmosInventory.name);
-  private readonly AUTOCOSMOS = envConfig.autocosmos;
-  private readonly browser: PuppeteerBrowser;
-  constructor(browser: PuppeteerBrowser) {
-    this.browser = browser;
-  }
+  private readonly AUTOCOSMOS_URL = envConfig.autocosmos;
+
+  constructor(private readonly browser: PuppeteerBrowser) {}
 
   async syncAll(vehicleCondition: AutocosmosCondition): Promise<void> {
     try {
@@ -68,7 +63,7 @@ export class AutocosmosInventory implements InventoryJob {
             );
             const location = this.extractLocation($, vehicleHtmlBlock);
             const externalId = getExternalId(path);
-            const url = `${this.AUTOCOSMOS}${path}`;
+            const url = `${this.AUTOCOSMOS_URL}${path}`;
             const name = this.extractName(url);
             const autocosmosVehicle: SyncAutocosmosVehicle = {
               vehiclePrice,
@@ -249,9 +244,9 @@ export class AutocosmosInventory implements InventoryJob {
 
     await puppeteerPage.setExtraHTTPHeaders({
       'User-Agent': USER_AGENT,
-      Referer: this.AUTOCOSMOS,
+      Referer: this.AUTOCOSMOS_URL,
     });
-    await puppeteerPage.goto(`${this.AUTOCOSMOS}/auto/${condition}`, {
+    await puppeteerPage.goto(`${this.AUTOCOSMOS_URL}/auto/${condition}`, {
       timeout: 0,
     });
     const html: string = await puppeteerPage.content();
@@ -271,10 +266,10 @@ export class AutocosmosInventory implements InventoryJob {
       AutocosmosCondition,
       vehicleCondition,
     ) as Condition;
-    const hostname = new URL(this.AUTOCOSMOS).hostname;
+    const hostname = new URL(this.AUTOCOSMOS_URL).hostname;
     const [name] = hostname.split('.');
     const currentWebsite = await WebsiteRepository.findByName(name);
-    const currentUrl = `${this.AUTOCOSMOS}/auto/${vehicleCondition}`;
+    const currentUrl = `${this.AUTOCOSMOS_URL}/auto/${vehicleCondition}`;
 
     return { condition, currentUrl, currentWebsite };
   }

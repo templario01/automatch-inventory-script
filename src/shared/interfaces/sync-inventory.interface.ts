@@ -1,3 +1,3 @@
 export interface InventoryJob {
-  syncAll(vehicleCondition: unknown): Promise<void>;
+  syncAll(vehicleCondition?: unknown): Promise<void>;
 }

@@ -38,11 +38,8 @@ import { getDurationTime } from '../../shared/utils/time';
 export class NeoAutoInventory implements InventoryJob {
   private readonly NEOAUTO_URL: string = envConfig.neoauto;
   private readonly logger: Logger = winstonLogger(NeoAutoInventory.name);
-  private readonly browser: PuppeteerBrowser;
 
-  constructor(browser: PuppeteerBrowser) {
-    this.browser = browser;
-  }
+  constructor(private readonly browser: PuppeteerBrowser) {}
 
   async syncAll(vehicleCondition: NeoautoCondition): Promise<void> {
     try {

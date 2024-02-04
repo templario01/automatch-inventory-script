@@ -12,3 +12,21 @@ export function getMileage(mileage: string): number {
     return undefined;
   }
 }
+
+export function formatLocation(texto: string): string {
+  try {
+    const regex = new RegExp(/^\s+|\s+$|[^a-zA-Z\s]/g);
+    const indexComma = texto.indexOf(',');
+    const formatedLocation =
+      texto.slice(0, indexComma).replace(regex, '').trim() +
+      ', ' +
+      texto
+        .slice(indexComma + 1)
+        .replace(regex, '')
+        .trim();
+
+    return formatedLocation;
+  } catch (error) {
+    return null;
+  }
+}
