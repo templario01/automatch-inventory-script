@@ -22,12 +22,12 @@ export class VehicleRepository {
         create: {
           ...vehicle,
           websiteId: website_id,
-          status: 'ACTIVE',
+          status: VehicleStatusEnum.ACTIVE,
         },
         update: {
           ...vehicle,
           websiteId: website_id,
-          status: 'ACTIVE',
+          status: VehicleStatusEnum.ACTIVE,
         },
       });
       return upsert;
@@ -44,25 +44,21 @@ export class VehicleRepository {
     data: UpdateInventoryStatusDto,
   ): Promise<Prisma.BatchPayload> {
     const { syncedVehiclesIds, websiteId, condition } = data;
-    return prisma.vehicle.updateMany({
+    const result = await prisma.vehicle.updateMany({
       where: {
-        AND: [
-          {
-            website: {
-              id: websiteId,
-            },
-          },
-          {
-            externalId: {
-              notIn: syncedVehiclesIds,
-            },
-          },
-          { ...(condition && { condition }) },
-        ],
+        website: {
+          id: websiteId,
+        },
+        externalId: {
+          notIn: syncedVehiclesIds,
+        },
+        ...(condition && { condition }),
       },
       data: {
         status: VehicleStatusEnum.INACTIVE,
       },
     });
+
+    return result;
   }
 }

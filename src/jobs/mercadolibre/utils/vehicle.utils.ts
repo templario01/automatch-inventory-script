@@ -17,3 +17,12 @@ export function convertToNumber(textNumber: string) {
     return undefined;
   }
 }
+
+export function getVehicleName(text: string) {
+  const words = text.split(' ');
+  if (words.length <= 5) {
+    return text;
+  } else {
+    return words.slice(0, 5).join(' ');
+  }
+}
