@@ -26,10 +26,10 @@ import { MercadolibreInventory } from './jobs/mercadolibre/mercadolibre-inventor
 
   logger.info('Browser ready to start jobs.');
   await Promise.all([
-    neoautoInventory.syncAll(NeoautoCondition.NEW),
+    /*     neoautoInventory.syncAll(NeoautoCondition.NEW),
     neoautoInventory.syncAll(NeoautoCondition.USED),
     autocosmosInventory.syncAll(AutocosmosCondition.NEW),
-    autocosmosInventory.syncAll(AutocosmosCondition.USED),
+    autocosmosInventory.syncAll(AutocosmosCondition.USED), */
     mercadolibreInventory.syncAll(),
   ]);
 

@@ -1,4 +1,4 @@
-import { CheerioAPI } from 'cheerio';
+import { Cheerio, CheerioAPI, Element as CheerioElement } from 'cheerio';
 import * as cheerio from 'cheerio';
 import { Browser as PuppeteerBrowser, Page } from 'puppeteer';
 import { Logger } from 'winston';
@@ -46,7 +46,7 @@ export class MercadolibreInventory implements InventoryJob {
       const pages = await this.getPages(this.browser);
       const page: Page = await this.browser.newPage();
 
-      for (const [index, vehicleNumber] of pages.entries()) {
+      for (const [currentPage, vehicleNumber] of pages.entries()) {
         const paginationLimit =
           vehicleNumber !== 1 ? `_Desde_${vehicleNumber}_` : '_';
         await page.goto(
@@ -59,34 +59,17 @@ export class MercadolibreInventory implements InventoryJob {
         const vehicleBlocks = $(
           'section.ui-search-results li.ui-search-layout__item',
         );
-
-        vehicleBlocks.map(async (_index, element) => {
-          const priceHtml = $(element).find(
-            'div.ui-search-price div.ui-search-price__second-line span.andes-money-amount span.andes-money-amount__fraction',
-          );
-          const tagPriceHtml = $(element).find(
-            'div.ui-search-price div.ui-search-price__second-line span.andes-money-amount span.andes-money-amount__currency-symbol',
-          );
-          const tagPrice = <TagCurrency>tagPriceHtml.html().trim();
-          const price = parsePrice(priceHtml.html());
-          const syncedVehicle = await this.SyncVehicleByCurrency(
-            {
-              parentHtml: $,
-              currency: PriceCurrency.PEN,
-              websiteId: currentWebsite.id,
-              vehicleBlock: element,
-              tagPrice,
-              price,
-            },
-            exchangeRate,
-          );
-
-          if (syncedVehicle) {
-            syncedVehiclesIds.push(syncedVehicle.externalId);
-          }
-        });
-        const carsSynced = index * ML_VEHICLES_BY_PAGE;
-        const percent = Number(((index + 1 / pages.length) * 100).toFixed(2));
+        await this.syncVehiclesOfHtmlBlock(
+          $,
+          vehicleBlocks,
+          currentWebsite.id,
+          syncedVehiclesIds,
+          exchangeRate,
+        );
+        const carsSynced = (currentPage + 1) * ML_VEHICLES_BY_PAGE;
+        const percent = Number(
+          (((currentPage + 1) / pages.length) * 100).toFixed(2),
+        );
         this.logger.info(
           `[USED CARS] total vehicles synced = ${carsSynced} (${percent}%)`,
         );
@@ -105,73 +88,67 @@ export class MercadolibreInventory implements InventoryJob {
     }
   }
 
-  async SyncVehicleByCurrency(
-    data: SyncMercadolibreVehicle,
-    exchangeValue?: number,
-  ): Promise<Vehicle> {
-    try {
-      const { parentHtml, vehicleBlock, websiteId, price, currency, tagPrice } =
-        data;
+  private async syncVehiclesOfHtmlBlock(
+    $: CheerioAPI,
+    vehiclesBlock: Cheerio<CheerioElement>,
+    websiteId: string,
+    syncedVehiclesIds: string[],
+    exchangeRate?: number,
+  ): Promise<void> {
+    const block = vehiclesBlock.map((_index, element) => element);
+    for (const element of block) {
+      const tagPriceHtml = $(element).find(
+        'div.ui-search-price div.ui-search-price__second-line span.andes-money-amount span.andes-money-amount__currency-symbol',
+      );
+      const tagPrice = <TagCurrency>tagPriceHtml.html().trim();
+      const syncedVehicle = await this.SyncVehicleByCurrency({
+        $,
+        vehicleBlock: element,
+        tagPrice,
+        exchangeValue: exchangeRate,
+        websiteId,
+      });
 
+      if (syncedVehicle) {
+        syncedVehiclesIds.push(syncedVehicle.externalId);
+      }
+    }
+  }
+
+  async SyncVehicleByCurrency(data: SyncMercadolibreVehicle): Promise<Vehicle> {
+    try {
+      const { $, vehicleBlock, websiteId, tagPrice, exchangeValue } = data;
+      const price = this.extractPrice($, vehicleBlock);
       const isValidVehicleInPEN = tagPrice === 'S/' && price >= PRICE_LIMIT_PEN;
       const isValidVehicleInUSD =
         tagPrice === 'U$S' && price >= PRICE_LIMIT_USD;
 
       if (isValidVehicleInPEN || isValidVehicleInUSD) {
-        const vehicleUrl = parentHtml(vehicleBlock)
-          .find(
-            'div.ui-search-result__content-wrapper div.ui-search-item__group--title',
-          )
-          .find('a')
-          .attr('href');
-        const [, path] = vehicleUrl.split('MPE-');
-        const [externalId] = path.split('-');
-        const vehicleImageUrl = parentHtml(vehicleBlock)
-          .find(
-            'div.andes-carousel-snapped__controls-wrapper div.andes-carousel-snapped div.andes-carousel-snapped__wrapper div.andes-carousel-snapped__slide',
-          )
-          .find('img')
-          .attr('src');
-        const year = parentHtml(vehicleBlock)
-          .find(
-            'div.ui-search-item__group--attributes ul.ui-search-card-attributes li.ui-search-card-attributes__attribute',
-          )
-          .html();
-        const mileage = parentHtml(vehicleBlock)
-          .find(
-            'div.ui-search-item__group--attributes ul.ui-search-card-attributes li.ui-search-card-attributes__attribute',
-          )
-          .text();
-
-        const location = parentHtml(vehicleBlock)
-          .find(
-            'div.ui-search-item__group--location span.ui-search-item__location',
-          )
-          .text();
-        const vehicleDescription = parentHtml(vehicleBlock)
-          .find(
-            'div.ui-search-result__content-wrapper div.ui-search-item__group--title',
-          )
-          .find('a')
-          .attr('title')
-          .replace('-', ' ');
-
+        const vehicleUrl = this.extractUrl($, vehicleBlock);
+        const externalId = this.extractExternalId(vehicleUrl);
+        const vehicleImageUrl = this.extractImageUrl($, vehicleBlock);
+        const year = this.extractYear($, vehicleBlock);
+        const mileage = this.extractMileage($, vehicleBlock);
+        const location = this.extractLocation($, vehicleBlock);
+        const vehicleDescription = this.extractDescription($, vehicleBlock);
         const vehicleName = getVehicleName(vehicleDescription);
 
         const createVehicle: CreateVehicleDto = {
           vehicle: {
             externalId: `ML${externalId}`,
             url: vehicleUrl,
-            location: formatLocation(location.replace('-', ',')),
+            location,
             frontImage: vehicleImageUrl,
             condition: Condition.USED,
-            year: +year,
+            year,
             name: vehicleName,
             description: vehicleDescription,
-            mileage: convertToNumber(mileage),
+            mileage,
             originalPrice: price,
-            price: exchangeValue ? price * exchangeValue : price,
-            currency,
+            price: isValidVehicleInPEN ? price * exchangeValue : price,
+            currency: isValidVehicleInPEN
+              ? PriceCurrency.PEN
+              : PriceCurrency.USD,
           },
           website_id: websiteId,
         };
@@ -181,6 +158,80 @@ export class MercadolibreInventory implements InventoryJob {
     } catch (error) {
       this.logger.error(`fail to sync vehicle, `, error);
     }
+  }
+
+  private extractPrice($: CheerioAPI, vehicleBlock: CheerioElement): number {
+    const priceHtml = $(vehicleBlock).find(
+      'div.ui-search-price div.ui-search-price__second-line span.andes-money-amount span.andes-money-amount__fraction',
+    );
+    const price = parsePrice(priceHtml.html());
+    return price;
+  }
+
+  private extractUrl($: CheerioAPI, vehicleBlock: CheerioElement): string {
+    const vehicleUrl = $(vehicleBlock)
+      .find(
+        'div.ui-search-result__content-wrapper div.ui-search-item__group--title',
+      )
+      .find('a')
+      .attr('href');
+    return vehicleUrl;
+  }
+
+  private extractExternalId(url: string): string {
+    const [, path] = url.split('MPE-');
+    const [externalId] = path.split('-');
+    return externalId;
+  }
+
+  private extractImageUrl($: CheerioAPI, vehicleBlock: CheerioElement): string {
+    const imageUrl = $(vehicleBlock)
+      .find(
+        'div.andes-carousel-snapped__controls-wrapper div.andes-carousel-snapped div.andes-carousel-snapped__wrapper div.andes-carousel-snapped__slide',
+      )
+      .find('img')
+      .attr('src');
+    return imageUrl;
+  }
+
+  private extractYear($: CheerioAPI, vehicleBlock: CheerioElement): number {
+    const year = $(vehicleBlock)
+      .find(
+        'div.ui-search-item__group--attributes ul.ui-search-card-attributes li.ui-search-card-attributes__attribute',
+      )
+      .html();
+    return +year;
+  }
+
+  private extractMileage($: CheerioAPI, vehicleBlock: CheerioElement): number {
+    const mileage = $(vehicleBlock)
+      .find(
+        'div.ui-search-item__group--attributes ul.ui-search-card-attributes li.ui-search-card-attributes__attribute',
+      )
+      .text();
+    return convertToNumber(mileage);
+  }
+
+  private extractLocation($: CheerioAPI, vehicleBlock: CheerioElement): string {
+    const location = $(vehicleBlock)
+      .find('div.ui-search-item__group--location span.ui-search-item__location')
+      .text();
+    const cleanLocation = location.replace('-', ',');
+    return formatLocation(cleanLocation);
+  }
+
+  private extractDescription(
+    $: CheerioAPI,
+    vehicleBlock: CheerioElement,
+  ): string {
+    const vehicleDescription = $(vehicleBlock)
+      .find(
+        'div.ui-search-result__content-wrapper div.ui-search-item__group--title',
+      )
+      .find('a')
+      .attr('title')
+      .replace('-', ' ');
+    return vehicleDescription;
   }
 
   async getPages(browser: PuppeteerBrowser): Promise<number[]> {
