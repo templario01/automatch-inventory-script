@@ -10,11 +10,14 @@ import { AutocosmosCondition } from './jobs/autocosmos/enums/autocosmos.enum';
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
 import { CurrencyConverterApiService } from './shared/services/currency-converter.service';
 import { MercadolibreInventory } from './jobs/mercadolibre/mercadolibre-inventory.job';
+import { getDurationTime } from './shared/utils/time';
 
 (async () => {
   puppeteer.use(StealthPlugin());
   const logger = winstonLogger('index.js');
   const options = getLaunchOptions(envConfig.environment, []);
+
+  const startTime = new Date();
   const browser: PuppeteerBrowser = await puppeteer.launch(options);
   const exchangeRateService = new CurrencyConverterApiService();
   const neoautoInventory = new NeoAutoInventory(browser);
@@ -26,15 +29,17 @@ import { MercadolibreInventory } from './jobs/mercadolibre/mercadolibre-inventor
 
   logger.info('Browser ready to start jobs.');
   await Promise.all([
-    /*     neoautoInventory.syncAll(NeoautoCondition.NEW),
+    neoautoInventory.syncAll(NeoautoCondition.NEW),
     neoautoInventory.syncAll(NeoautoCondition.USED),
     autocosmosInventory.syncAll(AutocosmosCondition.NEW),
-    autocosmosInventory.syncAll(AutocosmosCondition.USED), */
+    autocosmosInventory.syncAll(AutocosmosCondition.USED),
     mercadolibreInventory.syncAll(),
   ]);
 
   browser.close().then(() => {
-    logger.info('CronJobs finished successfully.');
+    const endTime = new Date();
+    const duration = getDurationTime(startTime, endTime);
+    logger.info(`CronJobs finished successfully. time taken: ${duration}`);
     process.exit(0);
   });
 })();
