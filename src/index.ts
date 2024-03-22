@@ -31,12 +31,12 @@ import { AutopiaInventory } from './jobs/autopia/autopia-inventory.job';
 
   logger.info('Browser ready to start jobs.');
   await Promise.all([
-    autopiaInventory.syncAll(),
-    /*   neoautoInventory.syncAll(NeoautoCondition.NEW),
+    neoautoInventory.syncAll(NeoautoCondition.NEW),
     neoautoInventory.syncAll(NeoautoCondition.USED),
     autocosmosInventory.syncAll(AutocosmosCondition.NEW),
     autocosmosInventory.syncAll(AutocosmosCondition.USED),
-    mercadolibreInventory.syncAll(), */
+    mercadolibreInventory.syncAll(),
+    autopiaInventory.syncAll(),
   ]);
 
   browser.close().then(() => {
