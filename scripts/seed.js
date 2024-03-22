@@ -7,6 +7,7 @@ const websites = [
   { name: 'neoauto', url: String(process.env.NEOAUTO_URL) },
   { name: 'mercadolibre', url: String(process.env.MERCADOLIBRE_URL) },
   { name: 'autocosmos', url: String(process.env.AUTOCOSMOS_URL) },
+  { name: 'autopia', url: String(process.env.AUTOPIA_URL) },
 ];
 
 async function main() {

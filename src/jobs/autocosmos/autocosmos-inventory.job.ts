@@ -33,7 +33,7 @@ export class AutocosmosInventory implements InventoryJob {
       const syncedVehiclesIds = [];
       const { condition, currentUrl, currentWebsite } =
         await this.getSyncConfig(vehicleCondition);
-      const totalPages = await this.getPages(this.browser, vehicleCondition);
+      const totalPages = await this.getPages(vehicleCondition);
 
       const page: Page = await this.browser.newPage();
 
@@ -236,11 +236,8 @@ export class AutocosmosInventory implements InventoryJob {
     return VehicleRepository.upsert(vehicleInfo);
   }
 
-  private async getPages(
-    browser: PuppeteerBrowser,
-    condition: string,
-  ): Promise<number> {
-    const puppeteerPage: Page = await browser.newPage();
+  async getPages(condition: string): Promise<number> {
+    const puppeteerPage: Page = await this.browser.newPage();
 
     await puppeteerPage.setExtraHTTPHeaders({
       'User-Agent': USER_AGENT,

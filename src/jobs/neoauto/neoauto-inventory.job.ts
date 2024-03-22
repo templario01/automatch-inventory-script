@@ -259,7 +259,7 @@ export class NeoAutoInventory implements InventoryJob {
     return location;
   }
 
-  private async getPages(condition: string): Promise<number> {
+  async getPages(condition: string): Promise<number> {
     const puppeteerPage: Page = await this.browser.newPage();
     await puppeteerPage.setExtraHTTPHeaders({
       'User-Agent': USER_AGENT,

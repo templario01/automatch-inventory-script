@@ -43,7 +43,7 @@ export class MercadolibreInventory implements InventoryJob {
       const startTime = new Date();
       const syncedVehiclesIds: string[] = [];
       const { currentWebsite, exchangeRate } = await this.getSyncConfig();
-      const pages = await this.getPages(this.browser);
+      const pages = await this.getPages();
       const page: Page = await this.browser.newPage();
 
       for (const [currentPage, vehicleNumber] of pages.entries()) {
@@ -234,8 +234,8 @@ export class MercadolibreInventory implements InventoryJob {
     return vehicleDescription;
   }
 
-  async getPages(browser: PuppeteerBrowser): Promise<number[]> {
-    const page = await browser.newPage();
+  async getPages(): Promise<number[]> {
+    const page = await this.browser.newPage();
     await page.goto(
       `${this.MERCADOLIBRE_URL}/autos/autos-camionetas/_OrderId_PRICE_NoIndex_True`,
       { timeout: 0 },

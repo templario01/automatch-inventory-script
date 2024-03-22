@@ -11,6 +11,7 @@ import StealthPlugin from 'puppeteer-extra-plugin-stealth';
 import { CurrencyConverterApiService } from './shared/services/currency-converter.service';
 import { MercadolibreInventory } from './jobs/mercadolibre/mercadolibre-inventory.job';
 import { getDurationTime } from './shared/utils/time';
+import { AutopiaInventory } from './jobs/autopia/autopia-inventory.job';
 
 (async () => {
   puppeteer.use(StealthPlugin());
@@ -26,14 +27,16 @@ import { getDurationTime } from './shared/utils/time';
     browser,
     exchangeRateService,
   );
+  const autopiaInventory = new AutopiaInventory(browser);
 
   logger.info('Browser ready to start jobs.');
   await Promise.all([
-    neoautoInventory.syncAll(NeoautoCondition.NEW),
+    autopiaInventory.syncAll(),
+    /*   neoautoInventory.syncAll(NeoautoCondition.NEW),
     neoautoInventory.syncAll(NeoautoCondition.USED),
     autocosmosInventory.syncAll(AutocosmosCondition.NEW),
     autocosmosInventory.syncAll(AutocosmosCondition.USED),
-    mercadolibreInventory.syncAll(),
+    mercadolibreInventory.syncAll(), */
   ]);
 
   browser.close().then(() => {

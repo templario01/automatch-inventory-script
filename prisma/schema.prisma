@@ -69,4 +69,5 @@ enum Condition {
 enum Currency {
   PEN
   USD
+  USDPEN
 }
