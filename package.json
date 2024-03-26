@@ -11,7 +11,8 @@
     "build": "npm run clean && tsc && gulp minify",
     "build:database": "npx prisma generate",
     "prisma:seed": "node scripts/seed.js",
-    "start": "node --env-file .env dist/index.js"
+    "start": "node --env-file .env dist/index.js",
+    "k8:deploy": "cd infra && kubectl apply -f resources.yaml && kubectl apply -f cronjob.yaml"
   },
   "keywords": [],
   "author": "",

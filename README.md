@@ -1,6 +1,6 @@
-# MS-VMOTOR-JOBS
+# automatch-inventory-script
 
-Scripts for sync vehicle information from different websites
+This script uses Node.js to scrape data from different online vehicles marketplaces. The program uses Puppeteer to navigate the websites and Cheerio to parse the HTML and extract relevant data. All data is ingested on MongoDB collection through automatized proccess, every 8 hs.
 
 ## Jobs Architecture
 ![jobs architecture](assets/jobs-architecture.png)
@@ -20,7 +20,7 @@ npm run install
 
 ```bash
 # generates prisma schema and generate types
-$ npm run pull:database
+$ npm run build:database
 
 # traspile .ts to .js and minify files
 $ npm run build
