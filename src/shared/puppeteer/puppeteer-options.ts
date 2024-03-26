@@ -6,10 +6,15 @@ export const getLaunchOptions = (
   proxy: string[] = [],
 ): PuppeteerLaunchOptions => ({
   args: [
-    '--single-proces',
     '--no-sandbox',
+    '--disable-setuid-sandbox',
+    '--disable-dev-shm-usage',
+    '--disable-accelerated-2d-canvas',
+    '--no-first-run',
     '--no-zygote',
     '--enable-blink-features=HTMLImports',
+    '--single-proces',
+    '--disable-gpu',
     ...proxy,
   ],
   ...(environment === Environment.PROD && {
