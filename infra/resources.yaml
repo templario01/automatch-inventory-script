@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: automatch
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: automatch-inventory-script-configmap
+  namespace: automatch
+data:
+  NODE_ENV: "production"
+  DATABASE_URL: "mongodb+srv://victbenavente:023FjoIZxpOQFKEa@automatch-mongo-cluster.tjppmyq.mongodb.net/automatch-inventory?retryWrites=true&w=majority"
+  FOREX_API_URL: "https://api.polygon.io/v2"
+  FOREX_API_KEY: "26GqXsECtWlFRBHMLr6uptVocAMfemr1"
+  BETTERSTACK_LOGTAIL_TOKEN: "ikSrYrVgChAyVnAjDt4FYfH3"
+  NEOAUTO_URL: "https://neoauto.com"
+  MERCADOLIBRE_URL: "https://listado.mercadolibre.com.pe"
+  AUTOCOSMOS_URL: "https://autocosmos.com.pe"
+  AUTOPIA_URL: "https://autopia.pe"
