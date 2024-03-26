@@ -1,0 +1,85 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: automatch
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: automatch-inventory-script-configmap
+  namespace: automatch
+data:
+  NODE_ENV: "production"
+  DATABASE_URL: "mongodb+srv://victbenavente:023FjoIZxpOQFKEa@automatch-mongo-cluster.tjppmyq.mongodb.net/automatch-inventory?retryWrites=true&w=majority"
+  FOREX_API_URL: "https://api.polygon.io/v2"
+  FOREX_API_KEY: "26GqXsECtWlFRBHMLr6uptVocAMfemr1"
+  BETTERSTACK_LOGTAIL_TOKEN: "FWXZMf4iV5ZjKeS6BYz1pSKG"
+  NEOAUTO_URL: "https://neoauto.com"
+  MERCADOLIBRE_URL: "https://listado.mercadolibre.com.pe"
+  AUTOCOSMOS_URL: "https://autocosmos.com.pe"
+  AUTOPIA_URL: "https://autopia.pe"
+
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: automatch-inventory-script-job
+  namespace: automatch
+spec:
+  parallelism: 1
+  completions: 1
+  activeDeadlineSeconds: 3600
+  template:
+    spec:
+      automountServiceAccountToken: false
+      restartPolicy: Never
+      containers:
+        - name: automatch-inventory-script
+          image: victor0141/automatch-inventory-script:1.1
+          env:
+            - name: NODE_ENV
+              valueFrom:
+                configMapKeyRef:
+                  name: automatch-inventory-script-configmap
+                  key: NODE_ENV
+            - name: DATABASE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: automatch-inventory-script-configmap
+                  key: DATABASE_URL
+            - name: FOREX_API_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: automatch-inventory-script-configmap
+                  key: FOREX_API_URL
+            - name: FOREX_API_KEY
+              valueFrom:
+                configMapKeyRef:
+                  name: automatch-inventory-script-configmap
+                  key: FOREX_API_KEY
+            - name: BETTERSTACK_LOGTAIL_TOKEN
+              valueFrom:
+                configMapKeyRef:
+                  name: automatch-inventory-script-configmap
+                  key: BETTERSTACK_LOGTAIL_TOKEN
+            - name: NEOAUTO_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: automatch-inventory-script-configmap
+                  key: NEOAUTO_URL
+            - name: MERCADOLIBRE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: automatch-inventory-script-configmap
+                  key: MERCADOLIBRE_URL
+            - name: AUTOCOSMOS_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: automatch-inventory-script-configmap
+                  key: AUTOCOSMOS_URL
+            - name: AUTOPIA_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: automatch-inventory-script-configmap
+                  key: AUTOPIA_URL
