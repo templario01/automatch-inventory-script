@@ -24,8 +24,10 @@ export const HTML_IMAGE_CONCESSIONARIE =
 export const HTML_IMAGE_USED = 'div.c-gallery figure.c-gallery__images a img';
 
 // Obtener imagen del vehículo en bloque HTML (version 2)
-export const HTML_IMAGE_V2 =
+export const HTML_IMAGE_V2_SLIDER =
   'div.c-results__body div.c-results-slider div.glide__track ul.glide__slides li.glide__slide a.c-results-slider__img-box img'; //a.c-results-slider__img-box img.c-results-slider__img-inside';
+export const HTML_IMAGE_V2_GALLERY =
+  'div.c-results__body div.c-results-slider div.c-results-slider__track ul.c-results-slider__slides li.c-results-slider__slide a.c-results-slider__img-box img';
 
 // Obtener URL del vehículo en bloque HTML (version 1)
 export const HTML_URL_CONCESSIONARIE = 'a.c-results-concessionaire__link';

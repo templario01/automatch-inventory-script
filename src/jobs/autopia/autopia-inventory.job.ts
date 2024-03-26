@@ -9,57 +9,74 @@ import { WebsiteRepository } from '../../shared/database/repositories/website.re
 import { Condition } from '../../shared/enums/vehicle.enum';
 import { PriceCurrency } from '../../shared/enums/currency.enum';
 import { VehicleRepository } from '../../shared/database/repositories/vehicle.repository';
+import { getDurationTime } from '../../shared/utils/time';
 
 export class AutopiaInventory {
   private readonly AUTOPIA_URL: string = envConfig.autopia;
   private readonly logger: Logger = winstonLogger(AutopiaInventory.name);
 
   constructor(private readonly browser: PuppeteerBrowser) {}
-  async getPages(): Promise<number | number[]> {
-    return;
-  }
+
   async syncAll(): Promise<void> {
-    const hostname = new URL(this.AUTOPIA_URL).hostname;
-    const [name] = hostname.split('.');
-    const currentWebsite = await WebsiteRepository.findByName(name);
+    try {
+      const startTime = new Date();
+      const syncedVehiclesIds: string[] = [];
+      const hostname = new URL(this.AUTOPIA_URL).hostname;
+      const [name] = hostname.split('.');
+      const currentWebsite = await WebsiteRepository.findByName(name);
 
-    const page: Page = await this.browser.newPage();
-    await page.goto(`${this.AUTOPIA_URL}/resultados`, { timeout: 0 });
-    await page.evaluate(this.scrollToEndOfPage);
+      const page: Page = await this.browser.newPage();
+      await page.goto(`${this.AUTOPIA_URL}/resultados`, { timeout: 0 });
+      await page.evaluate(this.scrollToEndOfPage);
+      let { loadedElements, totalElements } = await this.getLoadedElements(page);
 
-    let html: string;
-    let $: CheerioAPI;
-    let element: Cheerio<CheerioElement>;
-    let matchNumbers: RegExpMatchArray;
-    let loadedElements = -1;
-    let totalElements = 0;
+      while (loadedElements < totalElements) {
+        await page.click('div.fetch-canvas button');
+        await page.evaluate(this.scrollToEndOfPage);
+        ({ loadedElements, totalElements } = await this.getLoadedElements(page));
+      }
 
-    html = await page.content();
-    $ = cheerio.load(html);
+      const html: string = await page.content();
+      const $: CheerioAPI = cheerio.load(html);
+      const carsElements: Cheerio<CheerioElement> = $(
+        'div.search-results div.car-card',
+      );
+      await this.proccessCarsElements($, carsElements, currentWebsite.id, syncedVehiclesIds);
+      const deletedCars = await VehicleRepository.updateStatusForAllInventory({
+        syncedVehiclesIds,
+        websiteId: currentWebsite.id,
+      });
+      const endTime = new Date();
+      const duration = getDurationTime(startTime, endTime);
+      this.logger.info(
+        `[ALL CARS] Job to sync vehicles finished successfully, deleted cars: ${deletedCars.count}, elapsed time: ${duration}`,
+      );
+    } catch (error) {
+      this.logger.error('fail to sync all inventory', error);
+    }
+  }
 
-    element = $('div.fetch-cars').find('p');
-    matchNumbers = element.html().match(/\d+/g);
-    [loadedElements, totalElements] = matchNumbers
+  private async getLoadedElements(
+    page: Page,
+  ): Promise<{ loadedElements: number; totalElements: number }> {
+    const html = await page.content();
+    const $ = cheerio.load(html);
+    const element = $('div.fetch-cars').find('p');
+    const matchNumbers = element.html().match(/\d+/g);
+    const [loadedElements, totalElements] = matchNumbers
       ? matchNumbers.map(Number)
       : [undefined, undefined];
+    return { loadedElements, totalElements };
+  }
 
-    while (loadedElements < totalElements) {
-      await page.click('div.fetch-canvas button');
-      await page.evaluate(this.scrollToEndOfPage);
-      html = await page.content();
-      $ = cheerio.load(html);
-
-      element = $('div.fetch-cars').find('p');
-      matchNumbers = element.html().match(/\d+/g);
-      [loadedElements, totalElements] = matchNumbers
-        ? matchNumbers.map(Number)
-        : [undefined, undefined];
-    }
-
-    const carsElements = $('div.search-results div.car-card');
-
+  private async proccessCarsElements(
+    $: CheerioAPI,
+    carsElements: Cheerio<CheerioElement>,
+    websiteId: string,
+    syncedVehiclesIds: string[]
+  ): Promise<void> {
     await Promise.all(
-      carsElements.map(async (i, elem) => {
+      carsElements.map(async (_, elem) => {
         const vehicleUrl = $(elem).find('a').attr('href');
         if (vehicleUrl !== '#') {
           const frontImage = $(elem).find('a div.position img').attr('src');
@@ -101,16 +118,19 @@ export class AutopiaInventory {
               price: usdAmmount,
               currency: PriceCurrency.USDPEN,
             },
-            website_id: currentWebsite.id,
+            website_id: websiteId,
           };
 
-          VehicleRepository.upsert(createVehicle);
+          const carSynced = await VehicleRepository.upsert(createVehicle);
+          if (carSynced) {
+            syncedVehiclesIds.push(carSynced.externalId);
+          }
         }
       }),
     );
   }
 
-  private async scrollToEndOfPage() {
+  private async scrollToEndOfPage(): Promise<void> {
     await new Promise<void>((resolve) => {
       const step = 300;
       let lastHeight = 0;

@@ -52,6 +52,7 @@ export class VehicleRepository {
         externalId: {
           notIn: syncedVehiclesIds,
         },
+        status: VehicleStatusEnum.ACTIVE,
         ...(condition && { condition }),
       },
       data: {

@@ -11,11 +11,12 @@ import {
   OR,
   HTML_MOUNT,
   HTML_MOUNT_PRICE,
-  HTML_IMAGE_V2,
   HTML_URL_V2,
   HTML_DESCRIPTION_V2,
   HTML_MILEAGE_V2,
   HTML_LOCATION_V2,
+  HTML_IMAGE_V2_GALLERY,
+  HTML_IMAGE_V2_SLIDER,
 } from './constants/neoauto.constants';
 import {
   getModelAndYearFromUrl,
@@ -95,36 +96,38 @@ export class NeoAutoInventory implements InventoryJob {
     vehicleCondition: NeoautoCondition,
     syncedVehiclesIds: string[],
   ): Promise<void> {
-    for (const vehicleHtmlBlock of vehiclesBlock) {
-      const vehiclePrice = this.extractPrice($, vehicleHtmlBlock);
-      if (vehiclePrice !== undefined) {
-        const imageUrl = this.extractImageUrl($, vehicleHtmlBlock);
-        const vehicleUrl = this.extractVehicleUrl($, vehicleHtmlBlock);
-        const description = this.extractDescription($, vehicleHtmlBlock);
-        const mileage = this.extractMileage($, vehicleHtmlBlock);
-        const location = this.extractLocation($, vehicleHtmlBlock);
-        const vehicleName = this.extractName(vehicleUrl);
-        const neoautoVehicle: SyncNeoautoVehicle = {
-          vehicleName,
-          location,
-          imageUrl,
-          vehiclePrice,
-          vehicleUrl,
-          description,
-          websiteId,
-          mileage,
-        };
-
-        const carSynced = await this.updateVehicle(
-          neoautoVehicle,
-          vehicleCondition,
-        );
-
-        if (carSynced) {
-          syncedVehiclesIds.push(carSynced.externalId);
+    await Promise.all(
+      vehiclesBlock.map(async (_,vehicleHtmlBlock)=>{
+        const vehiclePrice = this.extractPrice($, vehicleHtmlBlock);
+        if (vehiclePrice !== undefined) {
+          const imageUrl = this.extractImageUrl($, vehicleHtmlBlock);
+          const vehicleUrl = this.extractVehicleUrl($, vehicleHtmlBlock);
+          const description = this.extractDescription($, vehicleHtmlBlock);
+          const mileage = this.extractMileage($, vehicleHtmlBlock);
+          const location = this.extractLocation($, vehicleHtmlBlock);
+          const vehicleName = this.extractName(vehicleUrl);
+          const neoautoVehicle: SyncNeoautoVehicle = {
+            vehicleName,
+            location,
+            imageUrl,
+            vehiclePrice,
+            vehicleUrl,
+            description,
+            websiteId,
+            mileage,
+          };
+  
+          const carSynced = await this.updateVehicle(
+            neoautoVehicle,
+            vehicleCondition,
+          );
+  
+          if (carSynced) {
+            syncedVehiclesIds.push(carSynced.externalId);
+          }
         }
-      }
-    }
+      })
+    )
   }
 
   private async updateVehicle(
@@ -192,7 +195,9 @@ export class NeoAutoInventory implements InventoryJob {
     page: CheerioAPI,
     htmlElement: CheerioElement,
   ): string | undefined {
-    const vehicleHtmlImage = page(htmlElement).find(HTML_IMAGE_V2);
+    const vehicleHtmlImage = page(htmlElement).find(
+      HTML_IMAGE_V2_SLIDER + OR + HTML_IMAGE_V2_GALLERY,
+    );
     const imageUrl = vehicleHtmlImage.attr('data-src');
 
     return imageUrl;

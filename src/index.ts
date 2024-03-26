@@ -21,23 +21,22 @@ import { AutopiaInventory } from './jobs/autopia/autopia-inventory.job';
   const startTime = new Date();
   const browser: PuppeteerBrowser = await puppeteer.launch(options);
   const exchangeRateService = new CurrencyConverterApiService();
+  const autopiaInventory = new AutopiaInventory(browser);
   const neoautoInventory = new NeoAutoInventory(browser);
   const autocosmosInventory = new AutocosmosInventory(browser);
   const mercadolibreInventory = new MercadolibreInventory(
     browser,
     exchangeRateService,
   );
-  const autopiaInventory = new AutopiaInventory(browser);
 
   logger.info('Browser ready to start jobs.');
-  await Promise.all([
-    neoautoInventory.syncAll(NeoautoCondition.NEW),
-    neoautoInventory.syncAll(NeoautoCondition.USED),
-    autocosmosInventory.syncAll(AutocosmosCondition.NEW),
-    autocosmosInventory.syncAll(AutocosmosCondition.USED),
-    mercadolibreInventory.syncAll(),
-    autopiaInventory.syncAll(),
-  ]);
+  // Use secuential await instead Promise.all(), this prevent open a new Chrome Tab for each .syncAll() call
+  await autopiaInventory.syncAll();
+  await mercadolibreInventory.syncAll();
+  await neoautoInventory.syncAll(NeoautoCondition.NEW);
+  await neoautoInventory.syncAll(NeoautoCondition.USED);
+  await autocosmosInventory.syncAll(AutocosmosCondition.NEW);
+  await autocosmosInventory.syncAll(AutocosmosCondition.USED);
 
   browser.close().then(() => {
     const endTime = new Date();

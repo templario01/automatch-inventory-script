@@ -30,7 +30,7 @@ export class AutocosmosInventory implements InventoryJob {
   async syncAll(vehicleCondition: AutocosmosCondition): Promise<void> {
     try {
       const startTime = new Date();
-      const syncedVehiclesIds = [];
+      const syncedVehiclesIds: string[] = [];
       const { condition, currentUrl, currentWebsite } =
         await this.getSyncConfig(vehicleCondition);
       const totalPages = await this.getPages(vehicleCondition);
@@ -46,49 +46,52 @@ export class AutocosmosInventory implements InventoryJob {
           'div.listing-container',
         ).find('article');
 
-        for (const vehicleHtmlBlock of vehiclesBlocks) {
-          try {
-            const vehiclePrice = this.extractPrice($, vehicleHtmlBlock);
-            const vehicleDescription = this.extractDescription(
-              $,
-              vehicleHtmlBlock,
-            );
-            const imageUrl = this.extractImage($, vehicleHtmlBlock);
-            const path = $(vehicleHtmlBlock).find('a').attr('href');
-            const vehicleYear = this.extractYear($, vehicleHtmlBlock);
-            const mileage = this.extractMileage(
-              $,
-              vehicleHtmlBlock,
-              vehicleCondition,
-            );
-            const location = this.extractLocation($, vehicleHtmlBlock);
-            const externalId = getExternalId(path);
-            const url = `${this.AUTOCOSMOS_URL}${path}`;
-            const name = this.extractName(url);
-            const autocosmosVehicle: SyncAutocosmosVehicle = {
-              vehiclePrice,
-              vehicleDescription,
-              imageUrl,
-              mileage,
-              location,
-              vehicleYear,
-              externalId,
-              vehicleUrl: url,
-              websiteId: currentWebsite.id,
-              vehicleName: name,
-            };
-            const carSynced = await this.syncVehicle(
-              autocosmosVehicle,
-              vehicleCondition,
-            );
-
-            if (carSynced) {
-              syncedVehiclesIds.push(carSynced.externalId);
+        await Promise.all(
+          vehiclesBlocks.map(async (_, vehicleHtmlBlock)=> {
+            try {
+              const vehiclePrice = this.extractPrice($, vehicleHtmlBlock);
+              const vehicleDescription = this.extractDescription(
+                $,
+                vehicleHtmlBlock,
+              );
+              const imageUrl = this.extractImage($, vehicleHtmlBlock);
+              const path = $(vehicleHtmlBlock).find('a').attr('href');
+              const vehicleYear = this.extractYear($, vehicleHtmlBlock);
+              const mileage = this.extractMileage(
+                $,
+                vehicleHtmlBlock,
+                vehicleCondition,
+              );
+              const location = this.extractLocation($, vehicleHtmlBlock);
+              const externalId = getExternalId(path);
+              const url = `${this.AUTOCOSMOS_URL}${path}`;
+              const name = this.extractName(url);
+              const autocosmosVehicle: SyncAutocosmosVehicle = {
+                vehiclePrice,
+                vehicleDescription,
+                imageUrl,
+                mileage,
+                location,
+                vehicleYear,
+                externalId,
+                vehicleUrl: url,
+                websiteId: currentWebsite.id,
+                vehicleName: name,
+              };
+              const carSynced = await this.syncVehicle(
+                autocosmosVehicle,
+                vehicleCondition,
+              );
+  
+              if (carSynced) {
+                syncedVehiclesIds.push(carSynced.externalId);
+              }
+            } catch (error) {
+              this.logger.error('fail to sync vehicle', error);
             }
-          } catch (error) {
-            this.logger.error('fail to sync vehicle', error);
-          }
-        }
+          })
+        )
+
         const carsSynced = currentPage * vehiclesBlocks.length;
         const percent = Number(((currentPage / totalPages) * 100).toFixed(2));
         this.logger.info(
