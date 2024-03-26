@@ -3,7 +3,8 @@
 **/cache/**
 **/assets/**
 **/.vscode/**
-**/prisma/**
 **/infra/**
-prisma
-infra
+**/assets/**
+**/cache/**
+**/dist/***
+
