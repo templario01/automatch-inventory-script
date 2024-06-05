@@ -110,6 +110,9 @@ export class MercadolibreInventory implements InventoryJob {
       });
 
       if (syncedVehicle) {
+        this.logger.info(
+          `[USED CARS] Vehicle synced: ${syncedVehicle.url}`,
+        );
         syncedVehiclesIds.push(syncedVehicle.externalId);
       }
     }

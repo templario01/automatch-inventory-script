@@ -97,7 +97,7 @@ export class NeoAutoInventory implements InventoryJob {
     syncedVehiclesIds: string[],
   ): Promise<void> {
     await Promise.all(
-      vehiclesBlock.map(async (_,vehicleHtmlBlock)=>{
+      vehiclesBlock.map(async (_, vehicleHtmlBlock) => {
         const vehiclePrice = this.extractPrice($, vehicleHtmlBlock);
         if (vehiclePrice !== undefined) {
           const imageUrl = this.extractImageUrl($, vehicleHtmlBlock);
@@ -106,6 +106,10 @@ export class NeoAutoInventory implements InventoryJob {
           const mileage = this.extractMileage($, vehicleHtmlBlock);
           const location = this.extractLocation($, vehicleHtmlBlock);
           const vehicleName = this.extractName(vehicleUrl);
+          const condition =
+            vehicleCondition === NeoautoCondition.NEW
+              ? Condition.NEW
+              : Condition.USED;
           const neoautoVehicle: SyncNeoautoVehicle = {
             vehicleName,
             location,
@@ -115,25 +119,21 @@ export class NeoAutoInventory implements InventoryJob {
             description,
             websiteId,
             mileage,
+            condition,
           };
-  
-          const carSynced = await this.updateVehicle(
-            neoautoVehicle,
-            vehicleCondition,
-          );
-  
+          const carSynced = await this.updateVehicle(neoautoVehicle);
           if (carSynced) {
+            this.logger.info(
+              `[${condition} CARS] Vehicle synced: ${carSynced.url}`,
+            );
             syncedVehiclesIds.push(carSynced.externalId);
           }
         }
-      })
-    )
+      }),
+    );
   }
 
-  private async updateVehicle(
-    data: SyncNeoautoVehicle,
-    condition: NeoautoCondition,
-  ): Promise<Vehicle> {
+  private async updateVehicle(data: SyncNeoautoVehicle): Promise<Vehicle> {
     try {
       const {
         vehicleName,
@@ -144,6 +144,7 @@ export class NeoAutoInventory implements InventoryJob {
         description,
         mileage,
         location,
+        condition,
       } = data;
       const { modelWithYear, id } = getVehicleInfoByNeoauto(vehicleUrl);
       const { year } = getModelAndYearFromUrl(modelWithYear);
@@ -152,9 +153,8 @@ export class NeoAutoInventory implements InventoryJob {
         vehicle: {
           location,
           description,
-          mileage: condition === NeoautoCondition.USED ? mileage : 0,
-          condition:
-            condition === NeoautoCondition.NEW ? Condition.NEW : Condition.USED,
+          mileage: condition === Condition.USED ? mileage : 0,
+          condition,
           externalId: id,
           frontImage: imageUrl,
           url: vehicleUrl,

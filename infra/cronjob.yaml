@@ -5,7 +5,7 @@ metadata:
   namespace: automatch
 spec:
   schedule: "0 */8 * * *"
-  suspend: false
+  suspend: true
   jobTemplate:
     spec:
       template:

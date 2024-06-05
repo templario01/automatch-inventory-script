@@ -123,6 +123,9 @@ export class AutopiaInventory {
 
           const carSynced = await VehicleRepository.upsert(createVehicle);
           if (carSynced) {
+            this.logger.info(
+              `[USED CARS] Vehicle synced: ${carSynced.url}`,
+            );
             syncedVehiclesIds.push(carSynced.externalId);
           }
         }

@@ -84,6 +84,9 @@ export class AutocosmosInventory implements InventoryJob {
               );
   
               if (carSynced) {
+                this.logger.info(
+                  `[${condition} CARS] Vehicle synced: ${carSynced.url}`,
+                );
                 syncedVehiclesIds.push(carSynced.externalId);
               }
             } catch (error) {

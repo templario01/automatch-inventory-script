@@ -1,22 +1,19 @@
 import * as winstomConfig from 'winston';
 import { format, createLogger, transports } from 'winston';
-import { Logtail } from '@logtail/node';
-import { LogtailTransport } from '@logtail/winston';
-import { Environment, envConfig } from '../settings/env-config';
-
 export type LogTransport = winstomConfig.transport;
 
 export const getLogTransports = (): LogTransport[] => {
   try {
     const transportsArray: LogTransport[] = [new transports.Console()];
+    /*  Logtail Transport will be disabled for expensive cost
     const { environment, logtailToken } = envConfig;
     if (environment === Environment.PROD || environment === Environment.STG) {
       const logtail = new Logtail(logtailToken);
       transportsArray.push(new LogtailTransport(logtail));
-    }
+    } */
     return transportsArray;
   } catch (error) {
-    process.exit(1)
+    process.exit(1);
   }
 };
 

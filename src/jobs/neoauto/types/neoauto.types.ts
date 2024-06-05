@@ -1,5 +1,6 @@
 import { Browser } from 'puppeteer';
 import { Element, CheerioAPI } from 'cheerio';
+import { Condition } from '../../../shared/enums/vehicle.enum';
 
 export interface SyncNeoautoPageParams {
   readonly browser: Browser;
@@ -17,6 +18,7 @@ export interface SyncNeoautoVehicle {
   readonly mileage?: number;
   readonly location?: string;
   readonly vehicleName?: string;
+  readonly condition?: Condition
 }
 
 export type VehicleBrandAndModel = {
