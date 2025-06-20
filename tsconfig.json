@@ -6,7 +6,7 @@
     "noImplicitAny": true,
     "moduleResolution": "node",
     "sourceMap": true,
-    "outDir": "cache",
+    "outDir": "dist",
     "resolveJsonModule": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true
