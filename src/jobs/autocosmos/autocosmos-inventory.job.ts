@@ -1,6 +1,5 @@
 import { winstonLogger } from '../../shared/logger/winston.logger';
-import { Cheerio, CheerioAPI, Element as CheerioElement } from 'cheerio';
-import * as cheerio from 'cheerio';
+import { Cheerio, CheerioAPI, load } from 'cheerio';
 import { Browser as PuppeteerBrowser, Page } from 'puppeteer';
 import { AutocosmosCondition } from './enums/autocosmos.enum';
 import { PriceCurrency } from '../../shared/enums/currency.enum';
@@ -20,6 +19,7 @@ import { envConfig } from '../../shared/settings/env-config';
 import { SyncAutocosmosVehicle } from './types/autocosmos.types';
 import { Vehicle } from '@prisma/client';
 import { getDurationTime } from '../../shared/utils/time';
+import { Element } from 'domhandler';
 
 export class AutocosmosInventory implements InventoryJob {
   private readonly logger = winstonLogger(AutocosmosInventory.name);
@@ -41,8 +41,8 @@ export class AutocosmosInventory implements InventoryJob {
         await page.goto(`${currentUrl}?pidx=${currentPage}`, { timeout: 0 });
 
         const html: string = await page.content();
-        const $: CheerioAPI = cheerio.load(html);
-        const vehiclesBlocks: Cheerio<CheerioElement> = $(
+        const $: CheerioAPI = load(html);
+        const vehiclesBlocks = $(
           'div.listing-container',
         ).find('article');
 
@@ -130,7 +130,7 @@ export class AutocosmosInventory implements InventoryJob {
     return `${brand} ${model}`;
   }
 
-  private extractPrice(page: CheerioAPI, htmlElement: CheerioElement): number {
+  private extractPrice(page: CheerioAPI, htmlElement: Element): number {
     const price = page(htmlElement)
       .find(
         'a div.listing-card__content div.listing-card__offer span.listing-card__price span.listing-card__price-value',
@@ -141,20 +141,20 @@ export class AutocosmosInventory implements InventoryJob {
 
   private extractDescription(
     page: CheerioAPI,
-    htmlElement: CheerioElement,
+    htmlElement: Element,
   ): string {
     const description = page(htmlElement).find('a').attr('title');
     return description;
   }
 
-  private extractImage(page: CheerioAPI, htmlElement: CheerioElement): string {
+  private extractImage(page: CheerioAPI, htmlElement: Element): string {
     const image = page(htmlElement)
       .find('a figure.listing-card__image img')
       .attr('content');
     return image;
   }
 
-  private extractYear(page: CheerioAPI, htmlElement: CheerioElement): number {
+  private extractYear(page: CheerioAPI, htmlElement: Element): number {
     const year = page(htmlElement)
       .find(
         'a div.listing-card__content div.listing-card__info span.listing-card__year',
@@ -165,7 +165,7 @@ export class AutocosmosInventory implements InventoryJob {
 
   private extractMileage(
     page: CheerioAPI,
-    htmlElement: CheerioElement,
+    htmlElement: Element,
     vehicleCondition: AutocosmosCondition,
   ): number {
     const mileageHtml = page(htmlElement)
@@ -180,7 +180,7 @@ export class AutocosmosInventory implements InventoryJob {
 
   private extractLocation(
     page: CheerioAPI,
-    htmlElement: CheerioElement,
+    htmlElement: Element,
   ): string | undefined {
     const locationCity = page(htmlElement)
       .find(
@@ -253,7 +253,7 @@ export class AutocosmosInventory implements InventoryJob {
       timeout: 0,
     });
     const html: string = await puppeteerPage.content();
-    const $: CheerioAPI = cheerio.load(html);
+    const $: CheerioAPI = load(html);
 
     const totalVehicles = $('section.m-with-filters')
       .find('header')

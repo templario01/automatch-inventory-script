@@ -1,6 +1,7 @@
 import { Browser } from 'puppeteer';
-import { Element, CheerioAPI } from 'cheerio';
+import { CheerioAPI } from 'cheerio';
 import { Condition } from '../../../shared/enums/vehicle.enum';
+import { Element } from 'domhandler';
 
 export interface SyncNeoautoPageParams {
   readonly browser: Browser;

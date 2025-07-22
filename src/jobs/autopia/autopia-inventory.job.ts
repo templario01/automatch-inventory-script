@@ -2,8 +2,8 @@ import { Logger } from 'winston';
 import { winstonLogger } from '../../shared/logger/winston.logger';
 import { envConfig } from '../../shared/settings/env-config';
 import { Browser as PuppeteerBrowser, Page } from 'puppeteer';
-import { CheerioAPI, Cheerio, Element as CheerioElement } from 'cheerio';
-import * as cheerio from 'cheerio';
+import { CheerioAPI, Cheerio, load } from 'cheerio';
+import { Element } from 'domhandler';
 import { CreateVehicleDto } from '../../shared/database/dtos/vehicle.dto';
 import { WebsiteRepository } from '../../shared/database/repositories/website.repository';
 import { Condition } from '../../shared/enums/vehicle.enum';
@@ -29,12 +29,9 @@ export class AutopiaInventory {
       await page.goto(`${this.AUTOPIA_URL}/resultados`, { timeout: 0 });
       await page.evaluate(this.scrollToEndOfPage);
 
-
-            const html0: string = await page.content();
-      const $0: CheerioAPI = cheerio.load(html0);
-            const carsElements0: Cheerio<CheerioElement> = $0(
-        'div.search-results div.car-card',
-      );
+      const html0: string = await page.content();
+      const $0: CheerioAPI = load(html0);
+      const carsElements0 = $0('div.search-results div.car-card');
       console.log(carsElements0.html());
 
       let { loadedElements, totalElements } =
@@ -48,10 +45,8 @@ export class AutopiaInventory {
       }
 
       const html: string = await page.content();
-      const $: CheerioAPI = cheerio.load(html);
-      const carsElements: Cheerio<CheerioElement> = $(
-        'div.search-results div.car-card',
-      );
+      const $: CheerioAPI = load(html);
+      const carsElements = $('div.search-results div.car-card');
       await this.proccessCarsElements(
         $,
         carsElements,
@@ -76,7 +71,7 @@ export class AutopiaInventory {
     page: Page,
   ): Promise<{ loadedElements: number; totalElements: number }> {
     const html = await page.content();
-    const $ = cheerio.load(html);
+    const $ = load(html);
     const element = $('div.fetch-cars').find('p');
     console.log(element.html());
     const matchNumbers = element.html().match(/\d+/g);
@@ -88,7 +83,7 @@ export class AutopiaInventory {
 
   private async proccessCarsElements(
     $: CheerioAPI,
-    carsElements: Cheerio<CheerioElement>,
+    carsElements: Cheerio<Element>,
     websiteId: string,
     syncedVehiclesIds: string[],
   ): Promise<void> {

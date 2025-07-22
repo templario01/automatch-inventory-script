@@ -1,5 +1,4 @@
-import { Cheerio, CheerioAPI, Element as CheerioElement } from 'cheerio';
-import * as cheerio from 'cheerio';
+import { Cheerio, CheerioAPI, load } from 'cheerio';
 import { Browser as PuppeteerBrowser, Page } from 'puppeteer';
 import { envConfig } from '../../shared/settings/env-config';
 import { Vehicle } from '@prisma/client';
@@ -35,6 +34,7 @@ import {
 } from '../../shared/utils/extract-vehicle-data';
 import { InventoryJob } from '../../shared/interfaces/sync-inventory.interface';
 import { getDurationTime } from '../../shared/utils/time';
+import { Element } from 'domhandler';
 
 export class NeoAutoInventory implements InventoryJob {
   private readonly NEOAUTO_URL: string = envConfig.neoauto;
@@ -57,8 +57,8 @@ export class NeoAutoInventory implements InventoryJob {
       for (let currentPage = 1; currentPage <= totalPages; currentPage++) {
         await page.goto(`${currentUrl}?page=${currentPage}`, { timeout: 0 });
         const html: string = await page.content();
-        const $: CheerioAPI = cheerio.load(html);
-        const vehiclesBlock: Cheerio<CheerioElement> = $(
+        const $: CheerioAPI = load(html);
+        const vehiclesBlock = $(
           'div.s-search div.s-container div.s-results article.c-results',
         );
         await this.syncVehiclesOfHtmlBlock(
@@ -91,7 +91,7 @@ export class NeoAutoInventory implements InventoryJob {
 
   async syncVehiclesOfHtmlBlock(
     $: CheerioAPI,
-    vehiclesBlock: Cheerio<CheerioElement>,
+    vehiclesBlock: Cheerio<Element>,
     websiteId: string,
     vehicleCondition: NeoautoCondition,
     syncedVehiclesIds: string[],
@@ -178,7 +178,7 @@ export class NeoAutoInventory implements InventoryJob {
 
   private extractPrice(
     page: CheerioAPI,
-    htmlElement: CheerioElement,
+    htmlElement: Element,
   ): number | undefined {
     const price = page(htmlElement)
       .find(HTML_MOUNT + OR + HTML_MOUNT_PRICE)
@@ -193,7 +193,7 @@ export class NeoAutoInventory implements InventoryJob {
 
   private extractImageUrl(
     page: CheerioAPI,
-    htmlElement: CheerioElement,
+    htmlElement: Element,
   ): string | undefined {
     const vehicleHtmlImage = page(htmlElement).find(
       HTML_IMAGE_V2_SLIDER + OR + HTML_IMAGE_V2_GALLERY,
@@ -205,7 +205,7 @@ export class NeoAutoInventory implements InventoryJob {
 
   private extractVehicleUrl(
     page: CheerioAPI,
-    htmlElement: CheerioElement,
+    htmlElement: Element,
   ): string | undefined {
     const vehiclePath = page(htmlElement).find(HTML_URL_V2).attr('href');
     const vehicleUrl = `${this.NEOAUTO_URL}/${vehiclePath}`;
@@ -224,7 +224,7 @@ export class NeoAutoInventory implements InventoryJob {
 
   private extractDescription(
     page: CheerioAPI,
-    htmlElement: CheerioElement,
+    htmlElement: Element,
   ): string | undefined {
     const description = page(htmlElement)
       .find(HTML_DESCRIPTION_V2)
@@ -237,7 +237,7 @@ export class NeoAutoInventory implements InventoryJob {
 
   private extractMileage(
     page: CheerioAPI,
-    htmlElement: CheerioElement,
+    htmlElement: Element,
   ): number | undefined {
     const [mileageHtmlText] = page(htmlElement)
       .find(HTML_MILEAGE_V2)
@@ -257,7 +257,7 @@ export class NeoAutoInventory implements InventoryJob {
 
   private extractLocation(
     page: CheerioAPI,
-    htmlElement: CheerioElement,
+    htmlElement: Element,
   ): string | undefined {
     const location = page(htmlElement).find(HTML_LOCATION_V2).html();
 
@@ -275,7 +275,7 @@ export class NeoAutoInventory implements InventoryJob {
       { timeout: 0 },
     );
     const html: string = await puppeteerPage.content();
-    const $: CheerioAPI = cheerio.load(html);
+    const $: CheerioAPI = load(html);
 
     const lastPaginationBtn = $('li.c-pagination-content__btn')
       .last()
@@ -298,10 +298,6 @@ export class NeoAutoInventory implements InventoryJob {
     const currentWebsite = await WebsiteRepository.findByName(name);
     const currentUrl = `${this.NEOAUTO_URL}/venta-de-autos-${Condition}`;
 
-    return {
-      condition,
-      currentWebsite,
-      currentUrl,
-    };
+    return { condition, currentWebsite, currentUrl };
   }
 }

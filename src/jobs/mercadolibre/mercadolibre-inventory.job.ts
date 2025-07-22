@@ -1,5 +1,4 @@
-import { Cheerio, CheerioAPI, Element as CheerioElement } from 'cheerio';
-import * as cheerio from 'cheerio';
+import { Cheerio, CheerioAPI, load } from 'cheerio';
 import { Browser as PuppeteerBrowser, Page } from 'puppeteer';
 import { Logger } from 'winston';
 import { winstonLogger } from '../../shared/logger/winston.logger';
@@ -25,6 +24,7 @@ import { CreateVehicleDto } from '../../shared/database/dtos/vehicle.dto';
 import { formatLocation } from '../../shared/utils/extract-vehicle-data';
 import { getDurationTime } from '../../shared/utils/time';
 import { TagCurrency } from './types/tag-price';
+import { Element } from 'domhandler';
 
 const PRICE_LIMIT_PEN = 4500;
 const PRICE_LIMIT_USD = 1500;
@@ -55,7 +55,7 @@ export class MercadolibreInventory implements InventoryJob {
         );
         await page.evaluate(this.scrollToEndOfPage);
         const html: string = await page.content();
-        const $: CheerioAPI = cheerio.load(html);
+        const $: CheerioAPI = load(html);
         const vehicleBlocks = $(
           'section.ui-search-results li.ui-search-layout__item',
         );
@@ -90,7 +90,7 @@ export class MercadolibreInventory implements InventoryJob {
 
   private async syncVehiclesOfHtmlBlock(
     $: CheerioAPI,
-    vehiclesBlock: Cheerio<CheerioElement>,
+    vehiclesBlock: Cheerio<any>,
     websiteId: string,
     syncedVehiclesIds: string[],
     exchangeRate?: number,
@@ -163,7 +163,7 @@ export class MercadolibreInventory implements InventoryJob {
     }
   }
 
-  private extractPrice($: CheerioAPI, vehicleBlock: CheerioElement): number {
+  private extractPrice($: CheerioAPI, vehicleBlock: Element): number {
     const priceHtml = $(vehicleBlock).find(
       'div.ui-search-price div.ui-search-price__second-line span.andes-money-amount span.andes-money-amount__fraction',
     );
@@ -171,7 +171,7 @@ export class MercadolibreInventory implements InventoryJob {
     return price;
   }
 
-  private extractUrl($: CheerioAPI, vehicleBlock: CheerioElement): string {
+  private extractUrl($: CheerioAPI, vehicleBlock: Element): string {
     const vehicleUrl = $(vehicleBlock)
       .find(
         'div.ui-search-result__content-wrapper div.ui-search-item__group--title',
@@ -187,7 +187,7 @@ export class MercadolibreInventory implements InventoryJob {
     return externalId;
   }
 
-  private extractImageUrl($: CheerioAPI, vehicleBlock: CheerioElement): string {
+  private extractImageUrl($: CheerioAPI, vehicleBlock: Element): string {
     const imageUrl = $(vehicleBlock)
       .find(
         'div.andes-carousel-snapped__controls-wrapper div.andes-carousel-snapped div.andes-carousel-snapped__wrapper div.andes-carousel-snapped__slide',
@@ -197,7 +197,7 @@ export class MercadolibreInventory implements InventoryJob {
     return imageUrl;
   }
 
-  private extractYear($: CheerioAPI, vehicleBlock: CheerioElement): number {
+  private extractYear($: CheerioAPI, vehicleBlock: Element): number {
     const year = $(vehicleBlock)
       .find(
         'div.ui-search-item__group--attributes ul.ui-search-card-attributes li.ui-search-card-attributes__attribute',
@@ -206,7 +206,7 @@ export class MercadolibreInventory implements InventoryJob {
     return +year;
   }
 
-  private extractMileage($: CheerioAPI, vehicleBlock: CheerioElement): number {
+  private extractMileage($: CheerioAPI, vehicleBlock: Element): number {
     const mileage = $(vehicleBlock)
       .find(
         'div.ui-search-item__group--attributes ul.ui-search-card-attributes li.ui-search-card-attributes__attribute',
@@ -215,7 +215,7 @@ export class MercadolibreInventory implements InventoryJob {
     return convertToNumber(mileage);
   }
 
-  private extractLocation($: CheerioAPI, vehicleBlock: CheerioElement): string {
+  private extractLocation($: CheerioAPI, vehicleBlock: Element): string {
     const location = $(vehicleBlock)
       .find('div.ui-search-item__group--location span.ui-search-item__location')
       .text();
@@ -225,7 +225,7 @@ export class MercadolibreInventory implements InventoryJob {
 
   private extractDescription(
     $: CheerioAPI,
-    vehicleBlock: CheerioElement,
+    vehicleBlock: Element,
   ): string {
     const vehicleDescription = $(vehicleBlock)
       .find(
@@ -244,7 +244,7 @@ export class MercadolibreInventory implements InventoryJob {
       { timeout: 0 },
     );
     const html = await page.content();
-    const $ = cheerio.load(html);
+    const $ = load(html);
     const vehiclesLabel = $(
       'aside.ui-search-sidebar div.ui-search-search-result span.ui-search-search-result__quantity-results',
     ).text();
