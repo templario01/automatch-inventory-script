@@ -3,10 +3,12 @@ import { prisma } from '../prisma';
 import {
   CreateVehicleDto,
   UpdateInventoryStatusDto,
+  VehicleWithWebsite,
 } from '../dtos/vehicle.dto';
 import { VehicleStatusEnum } from '../../enums/vehicle.enum';
 import { winstonLogger } from '../../logger/winston.logger';
 import { Logger } from 'winston';
+import { subHours } from 'date-fns';
 
 export class VehicleRepository {
   private static readonly logger: Logger = winstonLogger(
@@ -61,5 +63,20 @@ export class VehicleRepository {
     });
 
     return result;
+  }
+
+  static async getSoldVehicles(): Promise<VehicleWithWebsite[]> {
+    const oneHourAgo = subHours(new Date(), 1);
+    return prisma.vehicle.findMany({
+      where: {
+        updatedAt: {
+          gte: oneHourAgo,
+        },
+        status: VehicleStatusEnum.INACTIVE,
+      },
+      include:{
+        website: true,
+      }
+    });
   }
 }

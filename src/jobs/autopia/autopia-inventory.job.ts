@@ -28,12 +28,23 @@ export class AutopiaInventory {
       const page: Page = await this.browser.newPage();
       await page.goto(`${this.AUTOPIA_URL}/resultados`, { timeout: 0 });
       await page.evaluate(this.scrollToEndOfPage);
-      let { loadedElements, totalElements } = await this.getLoadedElements(page);
+
+
+            const html0: string = await page.content();
+      const $0: CheerioAPI = cheerio.load(html0);
+            const carsElements0: Cheerio<CheerioElement> = $0(
+        'div.search-results div.car-card',
+      );
+      console.log(carsElements0.html());
+
+      let { loadedElements, totalElements } =
+        await this.getLoadedElements(page);
 
       while (loadedElements < totalElements) {
         await page.click('div.fetch-canvas button');
         await page.evaluate(this.scrollToEndOfPage);
-        ({ loadedElements, totalElements } = await this.getLoadedElements(page));
+        ({ loadedElements, totalElements } =
+          await this.getLoadedElements(page));
       }
 
       const html: string = await page.content();
@@ -41,7 +52,12 @@ export class AutopiaInventory {
       const carsElements: Cheerio<CheerioElement> = $(
         'div.search-results div.car-card',
       );
-      await this.proccessCarsElements($, carsElements, currentWebsite.id, syncedVehiclesIds);
+      await this.proccessCarsElements(
+        $,
+        carsElements,
+        currentWebsite.id,
+        syncedVehiclesIds,
+      );
       const deletedCars = await VehicleRepository.updateStatusForAllInventory({
         syncedVehiclesIds,
         websiteId: currentWebsite.id,
@@ -62,6 +78,7 @@ export class AutopiaInventory {
     const html = await page.content();
     const $ = cheerio.load(html);
     const element = $('div.fetch-cars').find('p');
+    console.log(element.html());
     const matchNumbers = element.html().match(/\d+/g);
     const [loadedElements, totalElements] = matchNumbers
       ? matchNumbers.map(Number)
@@ -73,7 +90,7 @@ export class AutopiaInventory {
     $: CheerioAPI,
     carsElements: Cheerio<CheerioElement>,
     websiteId: string,
-    syncedVehiclesIds: string[]
+    syncedVehiclesIds: string[],
   ): Promise<void> {
     await Promise.all(
       carsElements.map(async (_, elem) => {
@@ -123,9 +140,7 @@ export class AutopiaInventory {
 
           const carSynced = await VehicleRepository.upsert(createVehicle);
           if (carSynced) {
-            this.logger.info(
-              `[USED CARS] Vehicle synced: ${carSynced.url}`,
-            );
+            this.logger.info(`[USED CARS] Vehicle synced: ${carSynced.url}`);
             syncedVehiclesIds.push(carSynced.externalId);
           }
         }

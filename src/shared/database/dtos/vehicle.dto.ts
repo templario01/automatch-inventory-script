@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import { PriceCurrency } from '../../enums/currency.enum';
 import { Condition } from '../../enums/vehicle.enum';
 
@@ -30,3 +31,7 @@ export class UpdateInventoryStatusDto {
   readonly websiteId: string;
   readonly condition?: Condition;
 }
+
+export type VehicleWithWebsite = Prisma.VehicleGetPayload<{
+  include: { website: true };
+}>;

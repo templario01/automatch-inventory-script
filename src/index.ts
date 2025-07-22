@@ -12,14 +12,19 @@ import { CurrencyConverterApiService } from './shared/services/currency-converte
 import { MercadolibreInventory } from './jobs/mercadolibre/mercadolibre-inventory.job';
 import { getDurationTime } from './shared/utils/time';
 import { AutopiaInventory } from './jobs/autopia/autopia-inventory.job';
+import { RabbitMqService } from './shared/services/rabbitmq/rabbitmq.service';
+import { VehicleRepository } from './shared/database/repositories/vehicle.repository';
 
 (async () => {
   puppeteer.use(StealthPlugin());
   const logger = winstonLogger('index.js');
   const options = getLaunchOptions(envConfig.environment, []);
+  const rabbitMqQueueName = envConfig.rabbitMqConfig.queueName;
 
   const startTime = new Date();
   const browser: PuppeteerBrowser = await puppeteer.launch(options);
+  const rabbitMqService = new RabbitMqService();
+  await rabbitMqService.connect();
   const exchangeRateService = new CurrencyConverterApiService();
   const autopiaInventory = new AutopiaInventory(browser);
   const neoautoInventory = new NeoAutoInventory(browser);
@@ -37,6 +42,12 @@ import { AutopiaInventory } from './jobs/autopia/autopia-inventory.job';
   await neoautoInventory.syncAll(NeoautoCondition.USED);
   await autocosmosInventory.syncAll(AutocosmosCondition.NEW);
   await autocosmosInventory.syncAll(AutocosmosCondition.USED);
+
+  const soldVehicles = await VehicleRepository.getSoldVehicles()
+  await rabbitMqService.createQueue(rabbitMqQueueName)
+  await rabbitMqService.sendToQueue(rabbitMqQueueName, { data: soldVehicles });
+  logger.info(`Sold vehicles sent to RabbitMQ queue: ${rabbitMqQueueName}`);
+  await rabbitMqService.close();
 
   browser.close().then(() => {
     const endTime = new Date();

@@ -1,10 +1,10 @@
-import { PuppeteerLaunchOptions } from 'puppeteer';
+import { LaunchOptions } from 'puppeteer';
 import { Environment } from '../settings/env-config';
 
 export const getLaunchOptions = (
   environment: Environment,
   proxy: string[] = [],
-): PuppeteerLaunchOptions => ({
+): LaunchOptions => ({
   args: [
     '--no-sandbox',
     '--disable-setuid-sandbox',
@@ -20,5 +20,5 @@ export const getLaunchOptions = (
   ...(environment === Environment.PROD && {
     executablePath: process.env.PUPPETEER_EXECUTABLE_PATH,
   }),
-  headless: 'new',
+  headless: true,
 });
